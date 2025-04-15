@@ -39,7 +39,7 @@ services:
              npm install --save-dev vite @vitejs/plugin-react-swc lovable-tagger &&
              npm run build &&
              npm install -g serve &&
-             serve -s dist -l 3000"
+             serve -s dist -l 3000 --listen-host 0.0.0.0"
     restart: always
     depends_on:
       - nginx-proxy

@@ -165,7 +165,8 @@ fi
 # Create a symlink to ensure Nginx can find the config file
 ln -sf /opt/proxy/nginx.conf /usr/local/nginx/conf/nginx.conf 2>/dev/null || true
 
-# Make the script executable
+# Make setup and diagnostic scripts executable
 chmod +x setup.sh
+chmod +x check_web_access.sh 2>/dev/null || true
 
 echo "Setup completed at /opt/proxy. You can now run: docker-compose up -d"

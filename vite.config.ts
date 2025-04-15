@@ -6,8 +6,8 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
-    port: 8080,
+    host: "0.0.0.0", // Bind to all available network interfaces
+    port: 3000,      // Match the port used in docker-compose
   },
   plugins: [
     react(),
