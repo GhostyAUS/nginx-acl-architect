@@ -6,10 +6,7 @@ services:
       - TZ=Australia/Perth
       - NODE_ENV=production
     container_name: nginx-forward-proxy
-    ports:
-      - "8080:8080"      # HTTP proxy port
-      - "80:80"          # Standard HTTP port
-      - "443:443"        # Standard HTTPS port
+    network_mode: host  # Use host network
     volumes:
       - /opt/proxy/nginx.conf:/usr/local/nginx/conf/nginx.conf:ro
       - /opt/proxy/conf.d:/etc/nginx/conf.d:rw
@@ -30,8 +27,7 @@ services:
     environment:
       - TZ=Australia/Perth
       - NODE_ENV=production
-    ports:
-      - "3000:3000"
+    network_mode: host  # Use host network
     volumes:
       - ./:/app:rw
       - /opt/proxy/nginx.conf:/app/nginx.conf:rw
@@ -49,3 +45,4 @@ services:
 
 volumes:
   nginx-cache:
+
