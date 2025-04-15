@@ -7,21 +7,17 @@ echo "Checking web UI access..."
 echo "Checking container status:"
 docker ps | grep -E "nginx-(proxy|acl-architect)"
 
-# Get container IPs
-echo -e "\nContainer network information:"
-docker inspect nginx-acl-architect | grep -i ipaddress
-
 # Check if port 3000 is listening
 echo -e "\nChecking if port 3000 is open:"
 netstat -tuln | grep 3000 || echo "Port 3000 is not open"
 
-# Check if the service is responding
+# Try a simple curl request
 echo -e "\nTrying to access the web UI:"
-curl -v http://localhost:3000 2>&1 | grep -E "< HTTP|Failed to connect"
+curl -I http://localhost:3000 2>&1 || echo "Failed to connect to the web UI"
 
-echo -e "\nChecking service logs:"
-docker logs nginx-acl-architect --tail 20
+# Check logs for vite-related issues
+echo -e "\nChecking service logs for Vite issues:"
+docker logs nginx-acl-architect | grep -i vite | tail -10
 
-echo -e "\nDiagnostic complete. Try accessing http://localhost:3000 in your browser."
-echo "If still not accessible, try restarting the containers with:"
+echo -e "\nTry rebuilding the containers with:"
 echo "docker-compose down && docker-compose up -d"

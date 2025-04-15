@@ -27,7 +27,6 @@ services:
     environment:
       - TZ=Australia/Perth
       - NODE_ENV=production
-      - PATH=/app/node_modules/.bin:$PATH
     network_mode: host  # Use host network
     volumes:
       - ./:/app:rw
@@ -36,8 +35,9 @@ services:
     working_dir: /app
     command: >
       sh -c "npm ci &&
-             npm install -D vite @vitejs/plugin-react-swc lovable-tagger &&
-             npx vite build &&
+             npm install -g vite @vitejs/plugin-react-swc &&
+             npm install -D lovable-tagger &&
+             vite build &&
              npm install -g serve &&
              serve -s dist -l 3000 --listen-host 0.0.0.0"
     restart: always
