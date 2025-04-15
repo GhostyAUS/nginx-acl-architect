@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Create base directory
@@ -104,7 +105,6 @@ http {
     }
 
     # Direct conditional logging for denied requests
-    # This replaces the previous deny_log variable approach
     access_log /var/log/nginx/denied.log denied if=$access_granted = 0;
 
 # END OF CODE TO EDIT, DO NOT EDIT BELOW.
@@ -168,3 +168,4 @@ ln -sf /opt/proxy/nginx.conf /usr/local/nginx/conf/nginx.conf 2>/dev/null || tru
 chmod +x setup.sh
 
 echo "Setup completed at /opt/proxy. You can now run: docker-compose up -d"
+
