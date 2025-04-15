@@ -1,4 +1,3 @@
-
 import { FC, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,12 +7,61 @@ import { Input } from '@/components/ui/input';
 import { saveNginxConfig } from '@/services/nginx-service';
 import { parseNginxConfig, generateNginxConfig } from '@/services/nginx-parser';
 import { toast } from "sonner";
-import { FolderOpen } from 'lucide-react';
+import { FolderOpen, ShieldX } from 'lucide-react';
+
+const GLOBAL_DENY_ACL = `
+    # Global Deny ACL - DO NOT REMOVE OR MODIFY
+    map $host $global_deny {
+        default 1;  # Deny by default
+        "~*" 0;    # Allow if any other ACL permits
+    }
+
+    # Final access decision with global deny
+    map "$access_granted$global_deny" $final_access {
+        default 0;
+        "10" 1;    # Only allow if access_granted=1 and global_deny=0
+    }`;
 
 const Settings: FC = () => {
   const [configText, setConfigText] = useState('');
   const [configPath, setConfigPath] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [hasGlobalDeny, setHasGlobalDeny] = useState(false);
+
+  const checkGlobalDeny = (config: string) => {
+    const hasGlobalDenyAcl = config.includes('map $host $global_deny') && 
+                            config.includes('map "$access_granted$global_deny" $final_access');
+    setHasGlobalDeny(hasGlobalDenyAcl);
+    return hasGlobalDenyAcl;
+  };
+
+  const handleAddGlobalDeny = () => {
+    if (hasGlobalDeny) {
+      toast.error('Global deny ACL already exists');
+      return;
+    }
+
+    try {
+      // Find the position before the "END OF CODE TO EDIT" comment
+      const endMarker = '# END OF CODE TO EDIT';
+      const endPosition = configText.indexOf(endMarker);
+      
+      if (endPosition === -1) {
+        setConfigText(configText + '\n' + GLOBAL_DENY_ACL);
+      } else {
+        const newConfig = configText.slice(0, endPosition) + 
+                         GLOBAL_DENY_ACL + '\n\n' + 
+                         configText.slice(endPosition);
+        setConfigText(newConfig);
+      }
+
+      setHasGlobalDeny(true);
+      toast.success('Global deny ACL added successfully');
+    } catch (error) {
+      console.error('Error adding global deny ACL:', error);
+      toast.error('Failed to add global deny ACL');
+    }
+  };
 
   const handleFormatConfig = () => {
     try {
@@ -31,6 +79,11 @@ const Settings: FC = () => {
   const handleSaveConfig = async () => {
     if (!configPath) {
       toast.error('Please select a configuration file first');
+      return;
+    }
+
+    if (!hasGlobalDeny) {
+      toast.error('Global deny ACL is required for security. Please add it before saving.');
       return;
     }
 
@@ -56,6 +109,12 @@ const Settings: FC = () => {
       const text = await file.text();
       setConfigText(text);
       setConfigPath(file.name);
+      
+      // Check for global deny ACL when loading file
+      if (!checkGlobalDeny(text)) {
+        toast.warning('Global deny ACL not found in configuration. Please add it for security.');
+      }
+      
       toast.success('Configuration file loaded successfully');
     } catch (error) {
       console.error('Error reading file:', error);
@@ -95,21 +154,44 @@ const Settings: FC = () => {
               onChange={handleFileSelect}
             />
           </div>
+          
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={handleAddGlobalDeny}
+              disabled={hasGlobalDeny}
+            >
+              <ShieldX className="h-4 w-4" />
+              Add Global Deny ACL
+            </Button>
+            {hasGlobalDeny && (
+              <span className="text-sm text-green-600 dark:text-green-400">
+                Global deny ACL is present
+              </span>
+            )}
+          </div>
+
           <p className="mb-4 text-gray-600 dark:text-gray-400">
             Edit the raw NGINX configuration file. Be careful with syntax as incorrect configurations
             may cause the proxy to malfunction.
           </p>
+
           <Textarea
             className="font-mono h-96 mb-4"
             value={configText}
             onChange={(e) => setConfigText(e.target.value)}
             placeholder="Paste your nginx.conf content here..."
           />
+
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={handleFormatConfig}>
               Format
             </Button>
-            <Button onClick={handleSaveConfig} disabled={isUpdating || !configPath}>
+            <Button 
+              onClick={handleSaveConfig} 
+              disabled={isUpdating || !configPath || !hasGlobalDeny}
+            >
               {isUpdating ? 'Saving...' : 'Save Configuration'}
             </Button>
           </div>
