@@ -16,10 +16,8 @@ cp "$NGINX_CONF" "${NGINX_CONF}.bak"
 echo "Created backup at ${NGINX_CONF}.bak"
 
 # Fix the if statements with "=" that nginx doesn't like
-# Replace "if=$var = 0" with "if=$var != 1"
-sed -i 's/if=\$\([a-zA-Z_][a-zA-Z0-9_]*\)\s*=\s*0/if=$\1 != 1/g' "$NGINX_CONF"
-# Also fix the if statements inside the config
-sed -i 's/if\s*(\$\([a-zA-Z_][a-zA-Z0-9_]*\)\s*=\s*0)/if ($\1 != 1)/g' "$NGINX_CONF"
+# Replace "if ($whitelist = 0)" with "if ($whitelist == 0)"
+sed -i 's/if\s*(\$\([a-zA-Z_][a-zA-Z0-9_]*\)\s*=\s*\([0-9]\))/if ($\1 == \2)/g' "$NGINX_CONF"
 
 echo "Fixed potential syntax errors in nginx configuration"
 

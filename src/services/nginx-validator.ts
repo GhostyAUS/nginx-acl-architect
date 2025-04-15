@@ -61,14 +61,18 @@ export function validateNginxConfig(configText: string): { isValid: boolean; err
 export function fixNginxConfig(configText: string): string {
   let fixedConfig = configText;
   
-  // Replace "if=$variable = 0" with "if=$variable != 1"
-  fixedConfig = fixedConfig.replace(/if=\$([a-zA-Z_]+)\s*=\s*0/g, 'if=$$$1 != 1');
-  
   // Replace "if ($variable = 0)" with "if ($variable != 1)"
   fixedConfig = fixedConfig.replace(/if\s*\(\$([a-zA-Z_]+)\s*=\s*0\)/g, 'if ($$$1 != 1)');
   
-  // Replace all other equality operators in if statements
-  fixedConfig = fixedConfig.replace(/access_log.*if=\$([a-zA-Z_]+)\s*=\s*(\d+)/g, 'access_log /var/log/nginx/denied.log denied if=$$$1 != 1');
+  // Replace other equality checks in if statements
+  fixedConfig = fixedConfig.replace(/if\s*\(\$([a-zA-Z_]+)\s*=\s*(\d+)\)/g, (match, varName, value) => {
+    if (value === '0') {
+      return `if ($${varName} != 1)`;
+    } else {
+      // For other values, replace '=' with '=='
+      return `if ($${varName} == ${value})`;
+    }
+  });
   
   return fixedConfig;
 }
