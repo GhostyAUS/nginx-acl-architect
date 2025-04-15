@@ -1,12 +1,11 @@
-
 import { FC } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Network, Globe, Settings, Layers } from 'lucide-react';
-import useMobile from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 const AppNavbar: FC = () => {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   const navItems = [
     {
