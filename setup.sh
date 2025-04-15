@@ -168,4 +168,3 @@ ln -sf /opt/proxy/nginx.conf /usr/local/nginx/conf/nginx.conf 2>/dev/null || tru
 chmod +x setup.sh
 
 echo "Setup completed at /opt/proxy. You can now run: docker-compose up -d"
-

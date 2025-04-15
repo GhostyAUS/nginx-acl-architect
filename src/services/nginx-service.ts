@@ -1,3 +1,4 @@
+
 import { NginxConfig, CombinedAclRule } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
@@ -21,7 +22,7 @@ http {
                       'Reason: "$deny_reason"';
     access_log /var/log/nginx/access.log main;
     error_log /var/log/nginx/error.log info;
-    access_log /var/log/nginx/denied.log denied if=$deny_log;
+    access_log /var/log/nginx/denied.log denied if=$access_granted = 0;
 
 #==============================================================================
     # Structured ACL Definitions
