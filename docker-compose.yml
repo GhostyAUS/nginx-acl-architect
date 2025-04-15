@@ -35,7 +35,7 @@ services:
     working_dir: /app
     command: >
       sh -c "npm ci &&
-             npm install -g vite &&
+             npm install vite @vitejs/plugin-react-swc lovable-tagger --no-save &&
              npm run build &&
              npm install -g serve &&
              serve -s dist -l 3000"
@@ -45,4 +45,3 @@ services:
 
 volumes:
   nginx-cache:
-
