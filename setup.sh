@@ -34,6 +34,13 @@ http {
                       'Reason: "$deny_reason"';
     access_log /var/log/nginx/access.log main;
     error_log /var/log/nginx/error.log info;
+    
+    # Define deny_log variable before using it
+    map $access_granted $deny_log {
+        0 1;  # Log if access is denied
+        1 0;  # Don't log if access is granted
+    }
+    
     access_log /var/log/nginx/denied.log denied if=$deny_log;
 
 #==============================================================================
@@ -164,4 +171,3 @@ ln -sf /opt/proxy/nginx.conf /usr/local/nginx/conf/nginx.conf 2>/dev/null || tru
 chmod +x setup.sh
 
 echo "Setup completed at /opt/proxy. You can now run: docker-compose up -d"
-
