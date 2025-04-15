@@ -141,6 +141,23 @@ http {
     }
 }`;
 
+export const DEFAULT_NGINX_CONF_PATH = '/usr/local/nginx/conf/nginx.conf';
+
+// Add this new function to read the default nginx.conf
+export async function loadDefaultNginxConfig(): Promise<string> {
+  try {
+    const response = await fetch(`file://${DEFAULT_NGINX_CONF_PATH}`);
+    if (!response.ok) {
+      throw new Error(`Failed to load nginx config: ${response.statusText}`);
+    }
+    return await response.text();
+  } catch (error) {
+    console.error('Failed to load default nginx config:', error);
+    toast.error('Failed to load default nginx configuration');
+    throw error;
+  }
+}
+
 // In a production environment, this would be an API call to load the nginx.conf file
 export async function loadNginxConfig(): Promise<NginxConfig> {
   try {

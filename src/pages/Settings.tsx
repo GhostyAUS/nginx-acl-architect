@@ -1,10 +1,10 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageTitle from '@/components/common/PageTitle';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { saveNginxConfig } from '@/services/nginx-service';
+import { saveNginxConfig, loadDefaultNginxConfig, DEFAULT_NGINX_CONF_PATH } from '@/services/nginx-service';
 import { parseNginxConfig, generateNginxConfig } from '@/services/nginx-parser';
 import { toast } from "sonner";
 import { FolderOpen, ShieldX } from 'lucide-react';
@@ -27,6 +27,23 @@ const Settings: FC = () => {
   const [configPath, setConfigPath] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [hasGlobalDeny, setHasGlobalDeny] = useState(false);
+
+  useEffect(() => {
+    // Load the default nginx.conf on component mount
+    const loadConfig = async () => {
+      try {
+        const config = await loadDefaultNginxConfig();
+        setConfigText(config);
+        setConfigPath(DEFAULT_NGINX_CONF_PATH);
+        checkGlobalDeny(config);
+      } catch (error) {
+        console.error('Error loading default config:', error);
+        toast.error('Failed to load default nginx configuration');
+      }
+    };
+
+    loadConfig();
+  }, []);
 
   const checkGlobalDeny = (config: string) => {
     const hasGlobalDenyAcl = config.includes('map $host $global_deny') && 
