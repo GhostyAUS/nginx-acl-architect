@@ -1,6 +1,10 @@
 
 #!/bin/bash
 
+# Create base directory
+mkdir -p /opt/proxy
+cd /opt/proxy
+
 # Create necessary directories
 mkdir -p logs
 mkdir -p conf.d
@@ -45,10 +49,10 @@ http {
     }
 }
 EOF
-  echo "Created initial nginx.conf"
+  echo "Created initial nginx.conf in /opt/proxy"
 fi
 
 # Make the script executable
 chmod +x setup.sh
 
-echo "Setup completed. You can now run: docker-compose up -d"
+echo "Setup completed at /opt/proxy. You can now run: docker-compose up -d"

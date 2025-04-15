@@ -13,10 +13,10 @@ services:
       - "80:80"          # Standard HTTP port
       - "443:443"        # Standard HTTPS port
     volumes:
-      - ./nginx.conf:/usr/local/nginx/conf/nginx.conf:rw
-      - ./conf.d:/etc/nginx/conf.d:rw
-      - ./ssl:/etc/nginx/ssl:rw
-      - ./logs:/var/log/nginx:rw
+      - /opt/proxy/nginx.conf:/usr/local/nginx/conf/nginx.conf:rw
+      - /opt/proxy/conf.d:/etc/nginx/conf.d:rw
+      - /opt/proxy/ssl:/etc/nginx/ssl:rw
+      - /opt/proxy/logs:/var/log/nginx:rw
       - nginx-cache:/var/cache/nginx/
     restart: always
     healthcheck:
@@ -36,8 +36,8 @@ services:
       - "3000:3000"
     volumes:
       - ./:/app:rw
-      - ./nginx.conf:/usr/local/nginx/conf/nginx.conf:rw
-      - ./logs:/var/log/nginx:rw
+      - /opt/proxy/nginx.conf:/usr/local/nginx/conf/nginx.conf:rw
+      - /opt/proxy/logs:/var/log/nginx:rw
     working_dir: /app
     command: >
       sh -c "npm ci &&
