@@ -7,7 +7,7 @@ import path from "path";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0", // Bind to all available network interfaces
-    port: 3000,      // Match the port used in docker-compose
+    port: 8080,      // Use port 8080 as required
   },
   plugins: [
     react(),
