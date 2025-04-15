@@ -20,6 +20,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    ports:
+      - "8080:8080"  # Explicitly map the NGINX proxy port
 
   nginx-acl-architect:
     image: node:20-alpine
@@ -28,7 +30,8 @@ services:
       - TZ=Australia/Perth
       - NODE_ENV=production
       - PATH=/app/node_modules/.bin:$PATH
-    network_mode: host  # Use host network
+    ports:
+      - "3000:3000"  # Explicitly map the web UI port
     volumes:
       - ./:/app:rw
       - /opt/proxy/nginx.conf:/app/nginx.conf:rw
@@ -39,7 +42,7 @@ services:
              npm install --save-dev vite @vitejs/plugin-react-swc lovable-tagger &&
              npm run build &&
              npm install -g serve &&
-             serve -s dist -l 3000"
+             serve -s dist -l 3000 --no-clipboard"
     restart: always
     depends_on:
       - nginx-proxy

@@ -12,6 +12,7 @@ mkdir -p ssl
 
 # Set proper permissions
 chmod 755 logs conf.d ssl
+chown -R 1000:1000 logs conf.d ssl
 
 # Create initial nginx.conf if it doesn't exist
 if [ ! -f nginx.conf ]; then
