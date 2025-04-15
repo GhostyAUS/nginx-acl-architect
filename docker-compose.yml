@@ -1,0 +1,52 @@
+
+version: '3.8'
+
+services:
+  nginx-proxy:
+    image: dominikbechstein/nginx-forward-proxy
+    environment:
+      - TZ=Australia/Perth
+      - NODE_ENV=production
+    container_name: nginx-forward-proxy
+    ports:
+      - "8080:8080"      # HTTP proxy port
+      - "80:80"          # Standard HTTP port
+      - "443:443"        # Standard HTTPS port
+    volumes:
+      - ./nginx.conf:/usr/local/nginx/conf/nginx.conf:rw
+      - ./conf.d:/etc/nginx/conf.d:rw
+      - ./ssl:/etc/nginx/ssl:rw
+      - ./logs:/var/log/nginx:rw
+      - nginx-cache:/var/cache/nginx/
+    restart: always
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  nginx-acl-architect:
+    image: node:20-alpine
+    container_name: nginx-acl-architect
+    environment:
+      - TZ=Australia/Perth
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app:rw
+      - ./nginx.conf:/usr/local/nginx/conf/nginx.conf:rw
+      - ./logs:/var/log/nginx:rw
+    working_dir: /app
+    command: >
+      sh -c "npm ci &&
+             npm run build &&
+             npm install -g serve &&
+             serve -s dist -l 3000"
+    restart: always
+    depends_on:
+      - nginx-proxy
+
+volumes:
+  nginx-cache:

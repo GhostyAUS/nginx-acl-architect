@@ -1,8 +1,57 @@
+
 # Welcome to your Lovable project
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/b6950823-0d1f-42d6-a43a-5b20a2ef8696
+
+## Deployment Instructions
+
+### Prerequisites
+- Docker and Docker Compose installed on the host machine
+- Git to clone the repository
+
+### Deployment Steps
+
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd nginx-acl-architect
+```
+
+2. **Run the setup script**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+3. **Start the application**
+```bash
+docker-compose up -d
+```
+
+4. **Access the application**
+- NGINX ACL Architect UI: http://localhost:3000
+- NGINX Proxy: http://localhost:8080
+
+### Updating the Application
+
+To update the application with the latest changes:
+
+```bash
+# Pull latest changes
+git pull
+
+# Rebuild and restart containers
+docker-compose down
+docker-compose up -d --build
+```
+
+### Monitoring and Logs
+
+- View application logs: `docker-compose logs nginx-acl-architect`
+- View proxy logs: `docker-compose logs nginx-proxy`
+- Check the `./logs/` directory for detailed NGINX logs
 
 ## How can I edit this code?
 
@@ -35,20 +84,6 @@ npm i
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
 
 ## What technologies are used for this project?
 
