@@ -1,16 +1,18 @@
 
-import { IpAclGroup, UrlAclGroup, NginxConfig } from '@/types/nginx';
+import { IpAclGroup, UrlAclGroup, NginxConfig, CombinedAcl, CombinedAclRule } from '@/types/nginx';
 
 // Regular expressions to match different parts of the config
 const geoBlockRegex = /geo\s+\$([a-zA-Z_]+)\s+\{([^}]+)\}/g;
-const mapBlockRegex = /map\s+\$([a-zA-Z_]+)\s+\$([a-zA-Z_]+)\s+\{([^}]+)\}/g;
+const mapBlockRegex = /map\s+\$([^{]+)\s+\$([a-zA-Z_]+)\s+\{([^}]+)\}/g;
 const geoEntryRegex = /^\s*([\d.]+\/\d+|[\d.]+)\s+(\d+);(?:\s*#\s*(.*))?$/gm;
-const mapEntryRegex = /^\s*"?([^"]+)"?\s+(\d+);(?:\s*#\s*(.*))?$/gm;
-const combinedMapRegex = /^\s*"?~\*1"?\s+1;\s*#\s*(.*)$/m;
+const mapEntryRegex = /^\s*"?([^"]+)"?\s+(\d+|"[^"]+");(?:\s*#\s*(.*))?$/gm;
+const combinedMapRegex = /^\s*"?([^"]+)"?\s+(\d+);(?:\s*#\s*(.*))?$/gm;
+const sourceGroupsExtractRegex = /\$([a-zA-Z_]+)/g;
 
 export function parseNginxConfig(configContent: string): NginxConfig {
   const ipAclGroups: IpAclGroup[] = [];
   const urlAclGroups: UrlAclGroup[] = [];
+  const combinedAcls: CombinedAcl[] = [];
 
   // Extract geo blocks (IP ACLs)
   let geoMatch;
@@ -39,42 +41,73 @@ export function parseNginxConfig(configContent: string): NginxConfig {
     });
   }
 
-  // Extract map blocks (URL ACLs)
+  // Extract map blocks (URL ACLs and combined ACLs)
   let mapMatch;
   while ((mapMatch = mapBlockRegex.exec(configContent)) !== null) {
-    const hostParam = mapMatch[1];
-    const groupName = mapMatch[2];
-    const groupContent = mapMatch[3];
+    const sourceExpression = mapMatch[1];
+    const targetVarName = mapMatch[2];
+    const blockContent = mapMatch[3];
     
-    // Skip non-ACL map blocks
-    if (!groupName.startsWith('acl_')) continue;
+    // Check if this is a combined ACL (source contains multiple variables)
+    const containsMultipleVars = (sourceExpression.match(/\$/g) || []).length > 1;
     
-    const entries = [];
-    let entryMatch;
-    
-    while ((entryMatch = mapEntryRegex.exec(groupContent)) !== null) {
-      // Skip the "default 0" line
-      if (entryMatch[1] === "default") continue;
+    if (containsMultipleVars) {
+      // This is a combined ACL
+      const sourceGroups: string[] = [];
+      let sourceGroupMatch;
+      while ((sourceGroupMatch = sourceGroupsExtractRegex.exec(sourceExpression)) !== null) {
+        sourceGroups.push(sourceGroupMatch[1]);
+      }
       
-      // Check if the pattern is a regex
-      const isRegex = entryMatch[1].startsWith("~");
+      const rules: CombinedAclRule[] = [];
+      let ruleMatch;
       
-      entries.push({
-        pattern: isRegex ? entryMatch[1].substring(1) : entryMatch[1],
-        value: entryMatch[2],
-        description: entryMatch[3] || '',
-        isRegex
+      while ((ruleMatch = combinedMapRegex.exec(blockContent)) !== null) {
+        // Skip the "default 0" line
+        if (ruleMatch[1] === "default") continue;
+        
+        rules.push({
+          pattern: ruleMatch[1],
+          value: ruleMatch[2],
+          description: ruleMatch[3] || ''
+        });
+      }
+      
+      combinedAcls.push({
+        name: targetVarName,
+        description: getGroupDescription(targetVarName),
+        sourceGroups,
+        rules
+      });
+    } else if (targetVarName.startsWith('acl_')) {
+      // This is a URL ACL group
+      const entries = [];
+      let entryMatch;
+      
+      while ((entryMatch = mapEntryRegex.exec(blockContent)) !== null) {
+        // Skip the "default 0" line
+        if (entryMatch[1] === "default") continue;
+        
+        // Check if the pattern is a regex
+        const isRegex = entryMatch[1].startsWith("~");
+        
+        entries.push({
+          pattern: isRegex ? entryMatch[1].substring(1) : entryMatch[1],
+          value: entryMatch[2],
+          description: entryMatch[3] || '',
+          isRegex
+        });
+      }
+      
+      urlAclGroups.push({
+        name: targetVarName,
+        description: getGroupDescription(targetVarName),
+        entries
       });
     }
-    
-    urlAclGroups.push({
-      name: groupName,
-      description: getGroupDescription(groupName),
-      entries
-    });
   }
 
-  return { ipAclGroups, urlAclGroups };
+  return { ipAclGroups, urlAclGroups, combinedAcls };
 }
 
 function getGroupDescription(groupName: string): string {
@@ -83,7 +116,10 @@ function getGroupDescription(groupName: string): string {
     acl_test_ips: 'Test Environment IPs',
     acl_microsoft_urls: 'Microsoft Services',
     acl_redhat_urls: 'Red Hat Services',
-    acl_cdn_urls: 'Content Delivery Networks'
+    acl_cdn_urls: 'Content Delivery Networks',
+    ip_acl: 'Combined IP Access Control',
+    url_acl: 'Combined URL Access Control',
+    access_granted: 'Final Access Decision'
   };
   
   return descriptionMap[groupName] || groupName;
@@ -143,23 +179,43 @@ http {
     result += `    }\n\n`;
   }
 
-  // Add combined ACL logic
-  result += `    # Combined ACL Logic\n`;
-  result += `    map "$acl_internal_ips$acl_test_ips" $ip_acl {\n`;
-  result += `        default 0;\n`;
-  result += `        "~*1" 1;  # Allow if either internal or test IPs match\n`;
-  result += `    }\n\n`;
-  
-  result += `    map "$acl_microsoft_urls$acl_redhat_urls$acl_cdn_urls" $url_acl {\n`;
-  result += `        default 0;\n`;
-  result += `        "~*1" 1;  # Allow if any URL group matches\n`;
-  result += `    }\n\n`;
-  
-  result += `    # Final Access Decision\n`;
-  result += `    map "$ip_acl$url_acl" $access_granted {\n`;
-  result += `        default 0;\n`;
-  result += `        "11" 1;  # Both IP and URL must be allowed\n`;
-  result += `    }\n\n`;
+  // Add Combined ACL Logic
+  if (config.combinedAcls && config.combinedAcls.length > 0) {
+    result += `    # Combined ACL Logic\n`;
+    
+    for (const acl of config.combinedAcls) {
+      // Create the source expression by joining all source groups with a $
+      const sourceExpression = acl.sourceGroups.map(group => `$${group}`).join('');
+      
+      result += `    map "${sourceExpression}" $${acl.name} {\n`;
+      result += `        default 0;\n`;
+      
+      for (const rule of acl.rules) {
+        const comment = rule.description ? `  # ${rule.description}` : '';
+        result += `        "${rule.pattern}" ${rule.value};${comment}\n`;
+      }
+      
+      result += `    }\n\n`;
+    }
+  } else {
+    // Default combined ACL logic for backward compatibility
+    result += `    # Combined ACL Logic\n`;
+    result += `    map "$acl_internal_ips$acl_test_ips" $ip_acl {\n`;
+    result += `        default 0;\n`;
+    result += `        "~*1" 1;  # Allow if either internal or test IPs match\n`;
+    result += `    }\n\n`;
+    
+    result += `    map "$acl_microsoft_urls$acl_redhat_urls$acl_cdn_urls" $url_acl {\n`;
+    result += `        default 0;\n`;
+    result += `        "~*1" 1;  # Allow if any URL group matches\n`;
+    result += `    }\n\n`;
+    
+    result += `    # Final Access Decision\n`;
+    result += `    map "$ip_acl$url_acl" $access_granted {\n`;
+    result += `        default 0;\n`;
+    result += `        "11" 1;  # Both IP and URL must be allowed\n`;
+    result += `    }\n\n`;
+  }
   
   result += `    # Denial Reasons Mapping\n`;
   result += `    map "$ip_acl$url_acl" $deny_reason {\n`;

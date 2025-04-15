@@ -1,5 +1,4 @@
-
-import { NginxConfig } from '@/types/nginx';
+import { NginxConfig, CombinedAclRule } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
 
@@ -236,4 +235,35 @@ export function validateUrlPattern(pattern: string, isRegex: boolean): boolean {
   // For non-regex, just ensure it's a reasonable domain format
   // This is a simplified check
   return /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test(pattern);
+}
+
+// Validate a combined ACL pattern
+export function validateCombinedPattern(pattern: string): boolean {
+  if (!pattern.trim()) {
+    return false;
+  }
+  
+  // For combined patterns, allow:
+  // - "~*1" (regex that matches any 1)
+  // - "11" (exact match for specific positions)
+  // - ".11" (wildcard for first position, then 1s)
+  // - etc.
+  
+  // Simplified validation: each character should be a 1, 0, or . (wildcard)
+  return /^(~\*\d|\d|\.)+$/.test(pattern);
+}
+
+// Get available groups for combined ACLs
+export function getAvailableGroups(config: NginxConfig): { name: string, description: string }[] {
+  const ipGroups = config.ipAclGroups.map(group => ({
+    name: group.name,
+    description: group.description
+  }));
+  
+  const urlGroups = config.urlAclGroups.map(group => ({
+    name: group.name,
+    description: group.description
+  }));
+  
+  return [...ipGroups, ...urlGroups];
 }

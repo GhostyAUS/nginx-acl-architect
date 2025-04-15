@@ -26,7 +26,21 @@ export interface UrlAclEntry {
   isRegex: boolean;
 }
 
+export interface CombinedAcl {
+  name: string;
+  description: string;
+  sourceGroups: string[];
+  rules: CombinedAclRule[];
+}
+
+export interface CombinedAclRule {
+  pattern: string;
+  value: string;
+  description: string;
+}
+
 export interface NginxConfig {
   ipAclGroups: IpAclGroup[];
   urlAclGroups: UrlAclGroup[];
+  combinedAcls: CombinedAcl[];
 }
