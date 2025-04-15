@@ -41,6 +41,7 @@ services:
     working_dir: /app
     command: >
       sh -c "npm ci &&
+             npm install -g vite &&
              npm run build &&
              npm install -g serve &&
              serve -s dist -l 3000"

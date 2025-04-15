@@ -14,6 +14,7 @@ if [ ! -f nginx.conf ]; then
   cat > nginx.conf <<EOF
 # NGINX Configuration
 worker_processes auto;
+
 events {
     worker_connections 1024;
 }
