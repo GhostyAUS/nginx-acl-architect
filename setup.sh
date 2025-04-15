@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Create base directory
@@ -32,6 +31,8 @@ http {
                       'Host: "$host" URI: "$request_uri" '
                       'Client: "$remote_addr" '
                       'Reason: "$deny_reason"';
+
+    # Standard access log
     access_log /var/log/nginx/access.log main;
     error_log /var/log/nginx/error.log info;
     
@@ -94,12 +95,6 @@ http {
         "11" 1;  # Both IP and URL must be allowed
     }
 
-    # Define deny_log variable explicitly before using it
-    map $access_granted $deny_log {
-        0 1;  # Log if access is denied (access_granted = 0)
-        1 0;  # Don't log if access is granted (access_granted = 1)
-    }
-
     # Denial Reasons Mapping
     map "$ip_acl$url_acl" $deny_reason {
         "00" "Both IP and URL not allowed";
@@ -108,8 +103,9 @@ http {
         default "";
     }
 
-    # Configure access log for denied requests
-    access_log /var/log/nginx/denied.log denied if=$deny_log;
+    # Direct conditional logging for denied requests
+    # This replaces the previous deny_log variable approach
+    access_log /var/log/nginx/denied.log denied if=$access_granted = 0;
 
 # END OF CODE TO EDIT, DO NOT EDIT BELOW.
 # ==============================================================================
