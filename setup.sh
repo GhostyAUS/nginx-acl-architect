@@ -52,6 +52,9 @@ EOF
   echo "Created initial nginx.conf in /opt/proxy"
 fi
 
+# Create a symlink to ensure Nginx can find the config file
+ln -sf /opt/proxy/nginx.conf /usr/local/nginx/conf/nginx.conf 2>/dev/null || true
+
 # Make the script executable
 chmod +x setup.sh
 
