@@ -16,6 +16,12 @@ export function validateNginxConfig(configText: string): { isValid: boolean; err
     errors.push(`Line contains invalid "=" in condition: if=$${match[1]} = ${match[2]}`);
   }
   
+  // Check for invalid "if" condition syntax with "=" inside parentheses
+  const equalCheckParensRegex = /if\s*\(\$([a-zA-Z_]+)\s*=\s*(\d+)\)/g;
+  while ((match = equalCheckParensRegex.exec(configText)) !== null) {
+    errors.push(`Line contains invalid "=" in condition: if ($${match[1]} = ${match[2]})`);
+  }
+  
   // Check for unclosed blocks
   const openBraces = (configText.match(/\{/g) || []).length;
   const closeBraces = (configText.match(/\}/g) || []).length;
@@ -60,6 +66,9 @@ export function fixNginxConfig(configText: string): string {
   
   // Replace "if ($variable = 0)" with "if ($variable != 1)"
   fixedConfig = fixedConfig.replace(/if\s*\(\$([a-zA-Z_]+)\s*=\s*0\)/g, 'if ($$$1 != 1)');
+  
+  // Replace all other equality operators in if statements
+  fixedConfig = fixedConfig.replace(/access_log.*if=\$([a-zA-Z_]+)\s*=\s*(\d+)/g, 'access_log /var/log/nginx/denied.log denied if=$$$1 != 1');
   
   return fixedConfig;
 }
