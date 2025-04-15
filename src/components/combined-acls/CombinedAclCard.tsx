@@ -1,4 +1,3 @@
-
 import { FC, useState } from 'react';
 import { CombinedAcl, CombinedAclRule } from '@/types/nginx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -150,7 +149,6 @@ const CombinedAclCard: FC<CombinedAclCardProps> = ({ acl, availableGroups, onUpd
         </CardContent>
       </Card>
 
-      {/* Add New Rule Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -201,7 +199,6 @@ const CombinedAclCard: FC<CombinedAclCardProps> = ({ acl, availableGroups, onUpd
         </DialogContent>
       </Dialog>
 
-      {/* Manage Source Groups Dialog */}
       <Dialog open={isManageGroupsOpen} onOpenChange={setIsManageGroupsOpen}>
         <DialogContent>
           <DialogHeader>

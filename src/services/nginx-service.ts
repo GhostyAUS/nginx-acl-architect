@@ -2,6 +2,7 @@
 import { NginxConfig } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
+import { validateNginxConfig } from './nginx-validator';
 
 // Sample nginx.conf content for initial loading/testing with the new format
 const sampleConfig = `worker_processes auto;
@@ -272,6 +273,28 @@ export function validateUrlPattern(pattern: string, isRegex: boolean): boolean {
   // For non-regex, just ensure it's a reasonable domain format
   // This is a simplified check
   return /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test(pattern);
+}
+
+// This is the missing function for validating combined patterns
+export function validateCombinedPattern(pattern: string): boolean {
+  if (!pattern.trim()) {
+    return false;
+  }
+  
+  // Combined pattern should be a combination of 0, 1, or . characters
+  // It can also use regex-like syntax with ~* prefix
+  if (pattern.startsWith('~*')) {
+    try {
+      // Just check if it's a valid regex
+      new RegExp(pattern.substring(2));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  
+  // For non-regex patterns, just check if it's a valid combination
+  return /^[01.]+$/.test(pattern);
 }
 
 // Update settings to handle the new configuration format

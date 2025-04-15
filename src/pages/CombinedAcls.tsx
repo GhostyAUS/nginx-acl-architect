@@ -30,7 +30,7 @@ const CombinedAcls: FC = () => {
     try {
       const config = await loadNginxConfig();
       setCombinedAcls(config.combinedAcls || []);
-      setAvailableGroups(getAvailableGroups(config));
+      setAvailableGroups(getAvailableGroups());
     } catch (error) {
       console.error('Failed to load configuration:', error);
       toast.error('Failed to load configuration');

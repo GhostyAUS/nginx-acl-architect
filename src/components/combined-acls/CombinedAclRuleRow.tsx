@@ -1,4 +1,3 @@
-
 import { FC, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -57,7 +56,6 @@ const CombinedAclRuleRow: FC<CombinedAclRuleRowProps> = ({ rule, onEdit, onDelet
         </td>
       </tr>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
