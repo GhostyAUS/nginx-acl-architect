@@ -1,13 +1,15 @@
+
 import { FC, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageTitle from '@/components/common/PageTitle';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { saveNginxConfig, loadDefaultNginxConfig, DEFAULT_NGINX_CONF_PATH } from '@/services/nginx-service';
+import { saveNginxConfig, loadDefaultNginxConfig, DEFAULT_NGINX_CONF_PATH, fixNginxSyntaxErrors } from '@/services/nginx-service';
 import { parseNginxConfig, generateNginxConfig } from '@/services/nginx-parser';
+import { validateAndFixNginxConfig } from '@/services/nginx-validator';
 import { toast } from "sonner";
-import { FolderOpen, ShieldX } from 'lucide-react';
+import { FolderOpen, ShieldX, CheckCircle } from 'lucide-react';
 
 const GLOBAL_DENY_ACL = `
     # Global Deny ACL - DO NOT REMOVE OR MODIFY
@@ -27,15 +29,18 @@ const Settings: FC = () => {
   const [configPath, setConfigPath] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [hasGlobalDeny, setHasGlobalDeny] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
 
   useEffect(() => {
     // Load the default nginx.conf on component mount
     const loadConfig = async () => {
       try {
         const config = await loadDefaultNginxConfig();
-        setConfigText(config);
+        // Validate and fix any syntax issues automatically on load
+        const fixedConfig = validateAndFixNginxConfig(config);
+        setConfigText(fixedConfig);
         setConfigPath(DEFAULT_NGINX_CONF_PATH);
-        checkGlobalDeny(config);
+        checkGlobalDeny(fixedConfig);
       } catch (error) {
         console.error('Error loading default config:', error);
         toast.error('Failed to load default nginx configuration');
@@ -80,6 +85,24 @@ const Settings: FC = () => {
     }
   };
 
+  const handleValidateConfig = () => {
+    try {
+      const fixedConfig = validateAndFixNginxConfig(configText);
+      if (fixedConfig !== configText) {
+        setConfigText(fixedConfig);
+        toast.success('Configuration validated and fixed');
+        setHasValidationErrors(false);
+      } else {
+        toast.success('Configuration is valid');
+        setHasValidationErrors(false);
+      }
+    } catch (error) {
+      console.error('Error validating configuration:', error);
+      toast.error('Failed to validate configuration');
+      setHasValidationErrors(true);
+    }
+  };
+
   const handleFormatConfig = () => {
     try {
       // Parse and regenerate to format
@@ -106,13 +129,22 @@ const Settings: FC = () => {
 
     setIsUpdating(true);
     try {
+      // Fix any syntax errors before parsing
+      const fixedConfig = validateAndFixNginxConfig(configText);
+      if (fixedConfig !== configText) {
+        setConfigText(fixedConfig);
+        toast.success('Fixed syntax errors in configuration');
+      }
+      
       // Parse the config text to validate it
-      const parsed = parseNginxConfig(configText);
+      const parsed = parseNginxConfig(fixedConfig);
       await saveNginxConfig(parsed);
       toast.success('Configuration saved successfully');
+      setHasValidationErrors(false);
     } catch (error) {
       console.error('Error saving configuration:', error);
       toast.error('Failed to save configuration. Check syntax and try again.');
+      setHasValidationErrors(true);
     } finally {
       setIsUpdating(false);
     }
@@ -124,11 +156,12 @@ const Settings: FC = () => {
 
     try {
       const text = await file.text();
-      setConfigText(text);
+      const fixedConfig = validateAndFixNginxConfig(text);
+      setConfigText(fixedConfig);
       setConfigPath(file.name);
       
       // Check for global deny ACL when loading file
-      if (!checkGlobalDeny(text)) {
+      if (!checkGlobalDeny(fixedConfig)) {
         toast.warning('Global deny ACL not found in configuration. Please add it for security.');
       }
       
@@ -187,6 +220,21 @@ const Settings: FC = () => {
                 Global deny ACL is present
               </span>
             )}
+            
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 ml-4"
+              onClick={handleValidateConfig}
+            >
+              <CheckCircle className="h-4 w-4" />
+              Validate Configuration
+            </Button>
+            
+            {hasValidationErrors && (
+              <span className="text-sm text-red-600 dark:text-red-400">
+                Configuration has syntax errors
+              </span>
+            )}
           </div>
 
           <p className="mb-4 text-gray-600 dark:text-gray-400">
@@ -207,7 +255,7 @@ const Settings: FC = () => {
             </Button>
             <Button 
               onClick={handleSaveConfig} 
-              disabled={isUpdating || !configPath || !hasGlobalDeny}
+              disabled={isUpdating || !configPath || !hasGlobalDeny || hasValidationErrors}
             >
               {isUpdating ? 'Saving...' : 'Save Configuration'}
             </Button>

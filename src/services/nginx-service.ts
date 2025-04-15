@@ -1,4 +1,3 @@
-
 import { NginxConfig, CombinedAclRule } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
@@ -149,14 +148,29 @@ export async function loadDefaultNginxConfig(): Promise<string> {
   try {
     const response = await fetch(`file://${DEFAULT_NGINX_CONF_PATH}`);
     if (!response.ok) {
-      throw new Error(`Failed to load nginx config: ${response.statusText}`);
+      console.log(`Failed to load nginx config from ${DEFAULT_NGINX_CONF_PATH}, using sample config`);
+      return sampleConfig;
     }
-    return await response.text();
+    
+    let configText = await response.text();
+    
+    // Fix any potential syntax errors with the "=" operator in conditions
+    configText = fixNginxSyntaxErrors(configText);
+    
+    return configText;
   } catch (error) {
     console.error('Failed to load default nginx config:', error);
     toast.error('Failed to load default nginx configuration');
-    throw error;
+    // Fallback to sample config if we can't load the actual file
+    return sampleConfig;
   }
+}
+
+// New function to fix common Nginx syntax errors
+export function fixNginxSyntaxErrors(configText: string): string {
+  // Replace "if=$variable = 0" with "if=$variable != 1"
+  // This is safer for Nginx's parser
+  return configText.replace(/if=\$([a-zA-Z_]+)\s*=\s*0/g, 'if=$$$1 != 1');
 }
 
 // In a production environment, this would be an API call to load the nginx.conf file

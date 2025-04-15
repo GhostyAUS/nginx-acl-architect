@@ -1,4 +1,3 @@
-
 import { IpAclGroup, UrlAclGroup, NginxConfig, CombinedAcl, CombinedAclRule } from '@/types/nginx';
 
 // Regular expressions to match different parts of the config
@@ -144,7 +143,7 @@ http {
                       'Reason: "$deny_reason"';
     access_log /var/log/nginx/access.log main;
     error_log /var/log/nginx/error.log info;
-    access_log /var/log/nginx/denied.log denied if=$deny_log;
+    access_log /var/log/nginx/denied.log denied if=$access_granted != 1;
 
 #==============================================================================
     # Structured ACL Definitions
@@ -232,7 +231,7 @@ http {
         resolver 8.8.8.8 1.1.1.1 ipv6=off;
 
         # Centralized ACL Check
-        if ($access_granted = 0) {
+        if ($access_granted != 1) {
             return 403 "Access Denied: $deny_reason";
         }
 
@@ -255,7 +254,7 @@ http {
 
         location / {
             # Single ACL check instead of duplicate validations
-            if ($access_granted = 0) {
+            if ($access_granted != 1) {
                 set $deny_reason "$deny_reason (location level)";
                 return 403 "Access Denied: $deny_reason";
             }
