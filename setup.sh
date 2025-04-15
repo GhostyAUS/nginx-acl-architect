@@ -35,14 +35,6 @@ http {
     access_log /var/log/nginx/access.log main;
     error_log /var/log/nginx/error.log info;
     
-    # Define deny_log variable before using it
-    map $access_granted $deny_log {
-        0 1;  # Log if access is denied
-        1 0;  # Don't log if access is granted
-    }
-    
-    access_log /var/log/nginx/denied.log denied if=$deny_log;
-
 #==============================================================================
     # Structured ACL Definitions
     # IP-based ACL Groups
@@ -102,6 +94,12 @@ http {
         "11" 1;  # Both IP and URL must be allowed
     }
 
+    # Define deny_log variable explicitly before using it
+    map $access_granted $deny_log {
+        0 1;  # Log if access is denied (access_granted = 0)
+        1 0;  # Don't log if access is granted (access_granted = 1)
+    }
+
     # Denial Reasons Mapping
     map "$ip_acl$url_acl" $deny_reason {
         "00" "Both IP and URL not allowed";
@@ -109,6 +107,9 @@ http {
         "10" "URL not allowed";
         default "";
     }
+
+    # Configure access log for denied requests
+    access_log /var/log/nginx/denied.log denied if=$deny_log;
 
 # END OF CODE TO EDIT, DO NOT EDIT BELOW.
 # ==============================================================================
