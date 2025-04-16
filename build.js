@@ -15,10 +15,6 @@ if (!fs.existsSync('dist')) {
 }
 
 try {
-  // Install esbuild (a fast JavaScript bundler)
-  console.log('Installing esbuild...');
-  execSync('npm install -g esbuild', { stdio: 'inherit' });
-  
   // Copy public files to dist
   console.log('Copying public files...');
   if (fs.existsSync('public')) {
@@ -31,43 +27,34 @@ try {
     }
   }
   
-  // Copy index.html and update paths
-  console.log('Setting up index.html...');
-  let indexContent = fs.readFileSync('index.html', 'utf8');
-  
-  // Replace React script tags with our vanilla JS script
-  const scriptTags = `
+  // Create index.html directly in dist
+  console.log('Creating index.html...');
+  const indexContent = `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NGINX ACL Architect</title>
+    <meta name="description" content="NGINX ACL Architect - A tool for managing NGINX access control lists" />
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div id="app"></div>
     <script src="main.js"></script>
+  </body>
+</html>
   `;
-  
-  indexContent = indexContent.replace(
-    /<script type="module" src="\/src\/main.*?"><\/script>/,
-    scriptTags
-  );
   
   fs.writeFileSync('dist/index.html', indexContent);
 
-  // Bundle JavaScript - explicitly exclude React and path-to-regexp
-  console.log('Bundling JavaScript...');
-  execSync(
-    'esbuild src/main.js --bundle --minify --outfile=dist/main.js --format=iife --external:path-to-regexp --external:react --external:react-dom --external:react-router-dom', 
-    { stdio: 'inherit' }
-  );
+  // Copy CSS directly
+  console.log('Copying CSS...');
+  fs.copyFileSync('src/index.css', 'dist/index.css');
 
-  // Add CSS
-  console.log('Bundling CSS...');
-  execSync(
-    'esbuild src/index.css --bundle --minify --outfile=dist/index.css',
-    { stdio: 'inherit' }
-  );
-
-  // Add CSS link to index.html
-  let finalIndexContent = fs.readFileSync('dist/index.html', 'utf8');
-  finalIndexContent = finalIndexContent.replace(
-    '</head>',
-    '  <link rel="stylesheet" href="index.css" />\n  </head>'
-  );
-  fs.writeFileSync('dist/index.html', finalIndexContent);
+  // Copy JavaScript directly
+  console.log('Copying JavaScript...');
+  fs.copyFileSync('src/main.js', 'dist/main.js');
 
   console.log('Build completed successfully!');
 } catch (error) {

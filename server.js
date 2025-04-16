@@ -10,9 +10,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
-const NGINX_CONF_PATH = '/opt/proxy/nginx.conf';  // Consistent path across all components
+const NGINX_CONF_PATH = '/opt/proxy/nginx.conf';
 
-// Middleware to parse text
+// Middleware
 app.use(express.text());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -78,7 +78,7 @@ app.post('/api/nginx/config', async (req, res) => {
   }
 });
 
-// Simplified route handling - serve index.html for all non-API routes
+// Serve index.html for all non-API routes
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api/')) {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));

@@ -26,6 +26,7 @@ services:
     environment:
       - TZ=Australia/Perth
       - PORT=3000
+      - NODE_ENV=production
     network_mode: host
     volumes:
       - ./:/app:rw
@@ -33,7 +34,7 @@ services:
       - /opt/proxy/logs:/var/log/nginx:ro
     working_dir: /app
     command: >
-      sh -c "npm install express fs-extra && 
+      sh -c "npm install express --no-save && 
              echo 'Building project...' &&
              node build.js &&
              node server.js"
