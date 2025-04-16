@@ -49,7 +49,7 @@ try {
   
   fs.writeFileSync('dist/index.html', indexContent);
 
-  // Bundle JavaScript/TypeScript with improved configuration
+  // Bundle JavaScript/TypeScript with proper React configuration
   console.log('Bundling JavaScript...');
   execSync(
     'esbuild src/main.tsx --bundle --minify --outfile=dist/main.js --format=iife --loader:.js=jsx --loader:.ts=tsx --loader:.tsx=tsx --jsx=automatic --global-name=App', 

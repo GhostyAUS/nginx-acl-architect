@@ -1,8 +1,7 @@
-
 import { NginxConfig } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
-import { validateNginxConfig } from './nginx-validator';
+import { validateNginxConfig, validateAndFixNginxConfig } from './nginx-validator';
 
 // Sample nginx.conf content for initial loading/testing with the new format
 const sampleConfig = `worker_processes auto;
@@ -86,13 +85,13 @@ http {
         resolver 8.8.8.8 1.1.1.1 ipv6=off;
 
         # Use the geo variable for access control
-        if ($whitelist = 0) {
+        if ($whitelist != 1) {
             set $deny_reason "IP not whitelisted: $remote_addr";
 	    return 403 "Access denied: Your IP is not whitelisted.";
         }
 
         # Block disallowed URLs
-        if ($is_allowed_url = 0) {
+        if ($is_allowed_url != 1) {
             set $deny_reason "URL not in allowed list: $host";
 	    return 403 "Access denied: This URL is not in the allowed list.";
         }
@@ -118,13 +117,13 @@ http {
         # HTTP forwarding
         location / {
             # Check whitelist again at location level
-            if ($whitelist = 0) {
+            if ($whitelist != 1) {
                 set $deny_reason "IP not whitelisted at location level: $remote_addr";
 				return 403 "Access denied: Your IP is not whitelisted.";
             }
 
             # Check URL filtering again at location level
-            if ($is_allowed_url = 0) {
+            if ($is_allowed_url != 1) {
                 set $deny_reason "URL not in allowed list at location level: $host";
 				return 403 "Access denied: This URL is not in the allowed list.";
             }
@@ -153,13 +152,12 @@ export const DEFAULT_NGINX_CONF_PATH = '/usr/local/nginx/conf/nginx.conf';
 // Add this new function to read the default nginx.conf
 export async function loadDefaultNginxConfig(): Promise<string> {
   try {
-    const response = await fetch(`file://${DEFAULT_NGINX_CONF_PATH}`);
-    if (!response.ok) {
-      console.log(`Failed to load nginx config from ${DEFAULT_NGINX_CONF_PATH}, using sample config`);
-      return sampleConfig;
-    }
+    // Browser security doesn't allow accessing local files with file:// protocol
+    // Using our fallback sample config instead
+    console.log(`Using sample nginx configuration since browser can't directly access local files`);
     
-    let configText = await response.text();
+    // We're running in a browser environment, use the sample config
+    let configText = sampleConfig;
     
     // Fix any potential syntax errors with the "=" operator in conditions
     configText = fixNginxSyntaxErrors(configText);

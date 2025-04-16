@@ -9,7 +9,8 @@ import { saveNginxConfig, loadDefaultNginxConfig, DEFAULT_NGINX_CONF_PATH, fixNg
 import { parseNginxConfig, generateNginxConfig } from '@/services/nginx-parser';
 import { validateAndFixNginxConfig } from '@/services/nginx-validator';
 import { toast } from "sonner";
-import { FolderOpen, ShieldX, CheckCircle } from 'lucide-react';
+import { FolderOpen, ShieldX, CheckCircle, Info } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const Settings: FC = () => {
   const [configText, setConfigText] = useState('');
@@ -120,8 +121,34 @@ const Settings: FC = () => {
       />
 
       <Card className="mb-6">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Raw Configuration Editor</CardTitle>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Info className="h-4 w-4 mr-1" />
+                Help
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>NGINX Configuration Help</DialogTitle>
+                <DialogDescription>
+                  This editor allows you to edit the NGINX configuration file directly. The file controls 
+                  IP whitelisting and URL filtering for the forward proxy.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                <h3 className="font-medium">Important Notes:</h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>The configuration is automatically validated and fixed when loaded.</li>
+                  <li>Use the Validate button to check your changes before saving.</li>
+                  <li>For IP whitelist entries, use CIDR notation (e.g., 192.168.1.1/32).</li>
+                  <li>URL patterns can use regular expressions with the "~" prefix.</li>
+                </ul>
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4 mb-4">

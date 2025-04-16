@@ -27,6 +27,7 @@ services:
     environment:
       - TZ=Australia/Perth
       - NODE_ENV=production
+      - PORT=3000
     network_mode: host  # Use host network
     volumes:
       - ./:/app:rw
@@ -38,7 +39,7 @@ services:
              npm install -g serve &&
              echo 'Building project...' &&
              node build.js &&
-             serve -s dist -p 3000"
+             serve -s dist -p 3000 --single"
     restart: always
     depends_on:
       - nginx-proxy
