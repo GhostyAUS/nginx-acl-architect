@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { validateNginxConfig, validateAndFixNginxConfig } from './nginx-validator';
 
 // Define path constants
-export const DEFAULT_NGINX_CONF_PATH = '/opt/proxy/nginx.conf';
+export const DEFAULT_NGINX_CONF_PATH = '/app/nginx.conf';
 
 // Load the nginx configuration from the server
 export async function loadNginxConfig(): Promise<NginxConfig> {

@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
-const NGINX_CONF_PATH = '/opt/proxy/nginx.conf';
+const NGINX_CONF_PATH = '/app/nginx.conf';  // Updated to match the container path
 
 // Middleware to parse text
 app.use(express.text());
