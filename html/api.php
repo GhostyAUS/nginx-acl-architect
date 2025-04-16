@@ -28,8 +28,11 @@ switch ($method) {
         
     case 'POST':
         // Update NGINX configuration
-        if (isset($_POST['action']) && $_POST['action'] === 'saveConfig') {
-            $configData = isset($_POST['config']) ? $_POST['config'] : '';
+        $input = file_get_contents('php://input');
+        $postData = json_decode($input, true);
+        
+        if (isset($postData['action']) && $postData['action'] === 'saveConfig') {
+            $configData = isset($postData['config']) ? $postData['config'] : '';
             
             if (empty($configData)) {
                 http_response_code(400);

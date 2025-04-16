@@ -446,8 +446,13 @@ function loadConfig() {
   const configEditor = document.getElementById('config-editor');
   configEditor.placeholder = 'Loading configuration...';
   
-  fetch('/api.php?action=config')
-    .then(response => response.json())
+  fetch('./api.php?action=config')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
     .then(data => {
       if (data.success) {
         configEditor.value = data.data;
@@ -476,13 +481,15 @@ function saveConfig() {
     return;
   }
   
-  const formData = new FormData();
-  formData.append('action', 'saveConfig');
-  formData.append('config', configContent);
-  
-  fetch('/api.php', {
+  fetch('./api.php', {
     method: 'POST',
-    body: formData
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      action: 'saveConfig',
+      config: configContent
+    })
   })
     .then(response => response.json())
     .then(data => {
