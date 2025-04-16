@@ -1,8 +1,6 @@
 
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import './App.css';
-import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
 import IpAcls from './pages/IpAcls';
 import UrlAcls from './pages/UrlAcls';
@@ -13,19 +11,49 @@ import AppLayout from './components/layout/AppLayout';
 import { Toaster } from './components/ui/sonner';
 
 const App: React.FC = () => {
+  const [currentPage, setCurrentPage] = useState<string>('dashboard');
+
+  useEffect(() => {
+    // Handle hash changes
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '') || 'dashboard';
+      setCurrentPage(hash);
+    };
+
+    // Set initial page based on hash
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
+
+  // Render the appropriate page based on the hash
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <AppLayout><Dashboard /></AppLayout>;
+      case 'ip-acls':
+        return <AppLayout><IpAcls /></AppLayout>;
+      case 'url-acls':
+        return <AppLayout><UrlAcls /></AppLayout>;
+      case 'combined-acls':
+        return <AppLayout><CombinedAcls /></AppLayout>;
+      case 'settings':
+        return <AppLayout><Settings /></AppLayout>;
+      default:
+        return <NotFound />;
+    }
+  };
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
-        <Route path="/ip-acls" element={<AppLayout><IpAcls /></AppLayout>} />
-        <Route path="/url-acls" element={<AppLayout><UrlAcls /></AppLayout>} />
-        <Route path="/combined-acls" element={<AppLayout><CombinedAcls /></AppLayout>} />
-        <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+    <div className="app">
+      {renderPage()}
       <Toaster />
-    </Router>
+    </div>
   );
 };
 

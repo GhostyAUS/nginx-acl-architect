@@ -1,8 +1,13 @@
 
-import { Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 const Index = () => {
-  return <Navigate to="/dashboard" replace />;
+  useEffect(() => {
+    // Simply redirect to the dashboard hash
+    window.location.href = '/#dashboard';
+  }, []);
+
+  return null;
 };
 
 export default Index;

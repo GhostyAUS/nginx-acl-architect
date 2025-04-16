@@ -1,37 +1,38 @@
+
 import { FC } from 'react';
-import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Network, Globe, Settings, Layers } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 const AppNavbar: FC = () => {
   const isMobile = useIsMobile();
+  const currentHash = window.location.hash.replace('#', '') || 'dashboard';
 
   const navItems = [
     {
       name: 'Dashboard',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      path: '/dashboard',
+      path: 'dashboard',
     },
     {
       name: 'IP ACLs',
       icon: <Network className="h-5 w-5" />,
-      path: '/ip-acls',
+      path: 'ip-acls',
     },
     {
       name: 'URL ACLs',
       icon: <Globe className="h-5 w-5" />,
-      path: '/url-acls',
+      path: 'url-acls',
     },
     {
       name: 'Combined ACLs',
       icon: <Layers className="h-5 w-5" />,
-      path: '/combined-acls',
+      path: 'combined-acls',
     },
     {
       name: 'Settings',
       icon: <Settings className="h-5 w-5" />,
-      path: '/settings',
+      path: 'settings',
     },
   ];
 
@@ -42,20 +43,18 @@ const AppNavbar: FC = () => {
           <ul className="space-y-2 px-2">
             {navItems.map((item) => (
               <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center px-3 py-2 rounded-md transition-colors',
-                      isActive
-                        ? 'bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400'
-                    )
-                  }
+                <a
+                  href={`#${item.path}`}
+                  className={cn(
+                    'flex items-center px-3 py-2 rounded-md transition-colors',
+                    currentHash === item.path
+                      ? 'bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400'
+                  )}
                 >
                   <span className="mr-3">{item.icon}</span>
                   {!isMobile && <span>{item.name}</span>}
-                </NavLink>
+                </a>
               </li>
             ))}
           </ul>

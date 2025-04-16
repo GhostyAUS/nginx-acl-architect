@@ -77,9 +77,11 @@ app.post('/api/nginx/config', async (req, res) => {
   }
 });
 
-// Catch-all route to serve the React app for any other routes
+// Simplified route handling - serve index.html for all non-API routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  if (!req.path.startsWith('/api/')) {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  }
 });
 
 // Start the server
