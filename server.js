@@ -10,6 +10,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Create temporary directory for uploaded files
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // Middleware
 app.use(express.static(path.join(__dirname, 'dist')));
 app.use(express.json());
@@ -25,11 +31,14 @@ app.use(express.static(path.join(__dirname, 'html'), {
   }
 }));
 
+// Serve uploaded files
+app.use('/uploads', express.static(uploadDir));
+
 // API endpoints for NGINX configuration handling
 app.get('/api/nginx/config', (req, res) => {
   let configPath = req.query.path || '/opt/proxy/nginx.conf';
   
-  // Handle the case where the path is [object PointerEvent]
+  // Handle the case where the path is [object PointerEvent] or invalid
   if (configPath === '[object PointerEvent]' || typeof configPath !== 'string') {
     configPath = '/opt/proxy/nginx.conf';
   }
@@ -37,6 +46,20 @@ app.get('/api/nginx/config', (req, res) => {
   console.log(`Server: Reading config from: ${configPath}`);
   
   try {
+    // First check if it's an uploaded file (no absolute path)
+    if (!configPath.startsWith('/')) {
+      const uploadedFilePath = path.join(uploadDir, configPath);
+      if (fs.existsSync(uploadedFilePath)) {
+        const configContent = fs.readFileSync(uploadedFilePath, 'utf8');
+        res.json({
+          success: true,
+          data: configContent
+        });
+        return;
+      }
+    }
+    
+    // Then check system paths
     if (fs.existsSync(configPath)) {
       const configContent = fs.readFileSync(configPath, 'utf8');
       res.json({
@@ -51,15 +74,33 @@ app.get('/api/nginx/config', (req, res) => {
         data: `# Sample NGINX configuration
 # This is a placeholder since the actual config at ${configPath} couldn't be found
 http {
-  server {
-    listen 80;
-    server_name example.com;
-    
-    location / {
-      root /usr/share/nginx/html;
-      index index.html;
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+   
+    log_format denied '$remote_addr - [$time_local] "$request" '
+                      '$status "$http_user_agent" "$http_referer" '
+                      'Host: "$host" URI: "$request_uri" '
+                      'Client: "$remote_addr" '
+                      'Reason: "$deny_reason"';
+	   
+    access_log /var/log/nginx/access.log main;
+    error_log /var/log/nginx/error.log info;
+    access_log /var/log/nginx/denied.log denied if=$deny_log;
+
+    # IP WHITELIST
+    geo $whitelist {
+        default 0;
+        192.168.1.0/24 1;  # Internal network
+        172.24.20.0/23 1;  # Example subnet
     }
-  }
+    
+    # URL WHITELIST
+    map $host $is_allowed_url {
+        default 0;
+        "*.example.com" 1;
+        "api.microsoft.com" 1;
+    }
 }
 `
       });
@@ -76,7 +117,7 @@ http {
 app.post('/api/nginx/config', (req, res) => {
   let configPath = req.query.path || '/opt/proxy/nginx.conf';
   
-  // Handle the case where the path is [object PointerEvent]
+  // Handle the case where the path is [object PointerEvent] or invalid
   if (configPath === '[object PointerEvent]' || typeof configPath !== 'string') {
     configPath = '/opt/proxy/nginx.conf';
   }
@@ -93,6 +134,27 @@ app.post('/api/nginx/config', (req, res) => {
   console.log(`Server: Writing config to: ${configPath}`);
   
   try {
+    // Handle uploaded files (no absolute path)
+    if (!configPath.startsWith('/')) {
+      const uploadedFilePath = path.join(uploadDir, configPath);
+      
+      // Create backup if file exists
+      if (fs.existsSync(uploadedFilePath)) {
+        const backupPath = `${uploadedFilePath}.bak.${Date.now()}`;
+        fs.copyFileSync(uploadedFilePath, backupPath);
+      }
+      
+      // Write new config to uploads directory
+      fs.writeFileSync(uploadedFilePath, configContent);
+      
+      res.json({
+        success: true,
+        message: 'Configuration saved successfully'
+      });
+      return;
+    }
+    
+    // Handle system paths
     // Create backup if file exists
     if (fs.existsSync(configPath)) {
       const backupPath = `${configPath}.bak.${Date.now()}`;
@@ -129,6 +191,18 @@ app.get('/api/nginx/files', (req, res) => {
     '/etc/nginx/conf.d',
     '/usr/local/nginx/conf/nginx.conf'
   ];
+  
+  // Add any uploaded files
+  try {
+    const uploadedFiles = fs.readdirSync(uploadDir);
+    const uploadedFilePaths = uploadedFiles.filter(file => 
+      !file.endsWith('.bak') && !file.startsWith('.')
+    );
+    
+    configLocations.push(...uploadedFilePaths);
+  } catch (error) {
+    console.error('Error reading upload directory:', error);
+  }
   
   res.json({
     success: true,

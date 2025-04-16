@@ -29,6 +29,7 @@ const Settings: FC = () => {
   const [configText, setConfigText] = useState('');
   const [fileName, setFileName] = useState('');
   const [availableConfigs, setAvailableConfigs] = useState<string[]>([]);
+  const [parseError, setParseError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -39,6 +40,9 @@ const Settings: FC = () => {
 
   const handleLoadConfig = async (path: string) => {
     try {
+      // Clear previous errors
+      setParseError(null);
+      
       const content = await readConfigFile(path);
       if (content) {
         setConfigText(content);
@@ -51,6 +55,7 @@ const Settings: FC = () => {
           toast.success(`Loaded and parsed configuration from ${path}`);
         } catch (parseError) {
           console.error('Error parsing config:', parseError);
+          setParseError(`The configuration was loaded but could not be parsed properly. You can still edit it manually.`);
           toast.error('Configuration loaded but could not be parsed. The file may have an invalid format.');
         }
       }
@@ -65,19 +70,34 @@ const Settings: FC = () => {
     if (!file) return;
 
     try {
-      const text = await file.text();
-      // Attempt to parse the config to validate it
-      const parsedConfig = parseNginxFile(text);
+      // Clear previous errors
+      setParseError(null);
       
+      const text = await file.text();
       setConfigText(text);
       setFileName(file.name);
       
-      // Update the application state with the parsed config
-      await saveNginxConfig(parsedConfig);
-      toast.success(`Configuration file "${file.name}" uploaded and parsed successfully`);
+      // Try to parse the config
+      try {
+        // Attempt to parse the config to validate it
+        const parsedConfig = parseNginxFile(text);
+        
+        // Update the application state with the parsed config
+        await saveNginxConfig(parsedConfig);
+        toast.success(`Configuration file "${file.name}" uploaded and parsed successfully`);
+      } catch (parseError) {
+        console.error('Error parsing uploaded file:', parseError);
+        setParseError(`The uploaded file could not be parsed properly. You can still edit it manually.`);
+        toast.warning('Configuration was uploaded but has format issues');
+      }
+      
+      // Reset the input to allow uploading the same file again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (error) {
       console.error('Error reading file:', error);
-      toast.error('Invalid NGINX configuration file');
+      toast.error('Failed to read uploaded file');
     }
   };
 
@@ -88,28 +108,24 @@ const Settings: FC = () => {
     }
 
     try {
-      // Validate the config before saving
-      const parsedConfig = parseNginxFile(configText);
-      
-      // Update the application state with the parsed config
-      await saveNginxConfig(parsedConfig);
-
-      if (fileName.startsWith('/opt/proxy/') || fileName.startsWith('/etc/nginx/') || fileName.startsWith('/usr/local/nginx/')) {
-        await writeConfigFile(fileName, configText);
-        toast.success('Configuration saved to Docker volume');
-      } else {
-        // Download the file if not a Docker volume path
-        const blob = new Blob([configText], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName || 'nginx.conf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.success('Configuration downloaded');
+      // Try to parse before saving, but allow saving even if parsing fails
+      let parsedConfig;
+      try {
+        parsedConfig = parseNginxFile(configText);
+        await saveNginxConfig(parsedConfig);
+        setParseError(null);
+      } catch (parseError) {
+        console.warn('Config saved but parsing had issues:', parseError);
+        setParseError(`The configuration was saved but has syntax issues that prevent proper parsing.`);
       }
+
+      // Save the file content regardless of parsing success
+      await writeConfigFile(fileName, configText);
+      toast.success('Configuration saved successfully');
+      
+      // Refresh available configs list
+      const files = await listConfigFiles();
+      setAvailableConfigs(files);
     } catch (error) {
       console.error('Error saving config:', error);
       toast.error('Failed to save configuration');
@@ -133,8 +149,8 @@ const Settings: FC = () => {
               <Input
                 type="text"
                 value={fileName}
-                placeholder="No file selected"
-                readOnly
+                onChange={(e) => setFileName(e.target.value)}
+                placeholder="Enter filename or path"
                 className="flex-grow"
               />
               
@@ -166,11 +182,20 @@ const Settings: FC = () => {
                     size="sm"
                     onClick={() => handleLoadConfig(path)}
                   >
-                    {path.split('/').pop()}
+                    {path.includes('/') ? path.split('/').pop() : path}
                   </Button>
                 ))}
               </div>
             </div>
+
+            {parseError && (
+              <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-4">
+                <div className="flex items-center">
+                  <Info className="h-5 w-5 mr-2" />
+                  <p>{parseError}</p>
+                </div>
+              </div>
+            )}
 
             <Textarea
               className="font-mono h-96 mb-4"

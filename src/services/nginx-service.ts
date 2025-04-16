@@ -1,4 +1,3 @@
-
 import { NginxConfig } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
@@ -26,7 +25,6 @@ export function parseNginxFile(fileContent: string): NginxConfig {
     return config;
   } catch (error) {
     console.error('Failed to parse nginx config:', error);
-    toast.error('Failed to parse nginx configuration. Check syntax and try again.');
     throw error;
   }
 }
@@ -37,7 +35,6 @@ export function generateNginxFile(config: NginxConfig): string {
     return generateNginxConfig(config);
   } catch (error) {
     console.error('Failed to generate nginx config:', error);
-    toast.error('Failed to generate nginx configuration text.');
     throw error;
   }
 }
@@ -61,8 +58,16 @@ export async function loadNginxConfig(): Promise<NginxConfig> {
     
     // If no config is found, return a default and try to load from server
     const defaultConfig = {
-      ipAclGroups: [],
-      urlAclGroups: [],
+      ipAclGroups: [{
+        name: 'whitelist',
+        description: 'IP Whitelist',
+        entries: []
+      }],
+      urlAclGroups: [{
+        name: 'is_allowed_url',
+        description: 'URL Whitelist',
+        entries: []
+      }],
       combinedAcls: []
     };
     
@@ -79,12 +84,19 @@ export async function loadNginxConfig(): Promise<NginxConfig> {
     return defaultConfig;
   } catch (error) {
     console.error('Failed to load nginx config:', error);
-    toast.error('Failed to load nginx configuration');
     
     // Return a default config that matches NginxConfig type
     return {
-      ipAclGroups: [],
-      urlAclGroups: [],
+      ipAclGroups: [{
+        name: 'whitelist',
+        description: 'IP Whitelist',
+        entries: []
+      }],
+      urlAclGroups: [{
+        name: 'is_allowed_url',
+        description: 'URL Whitelist',
+        entries: []
+      }],
       combinedAcls: []
     };
   }
@@ -98,15 +110,14 @@ export async function saveNginxConfig(config: NginxConfig): Promise<void> {
     
     // Save to local storage
     localStorage.setItem('nginxConfig', JSON.stringify(config));
-    toast.success('Configuration saved successfully');
+    console.log('Configuration saved to global state and localStorage');
   } catch (error) {
     console.error('Failed to save nginx config:', error);
-    toast.error('Failed to save nginx configuration');
     throw error;
   }
 }
 
-// List available config files from Docker volumes
+// List available config files from Docker volumes and uploads
 export async function listConfigFiles(): Promise<string[]> {
   try {
     // Call the API to get the list of config files
@@ -131,19 +142,14 @@ export async function listConfigFiles(): Promise<string[]> {
   }
 }
 
-// Function to read config file from Docker volume
+// Function to read config file from Docker volume or uploads directory
 export async function readConfigFile(path: string): Promise<string> {
   try {
     console.log(`Reading config from: ${path}`);
     
-    // Handle null or undefined path
-    if (!path) {
-      path = '/opt/proxy/nginx.conf';
-    }
-    
-    // Ensure the path is a string
-    if (typeof path !== 'string') {
-      console.warn(`Invalid path type: ${typeof path}, using default path`);
+    // Handle null, undefined or PointerEvent path
+    if (!path || path === '[object PointerEvent]' || typeof path !== 'string') {
+      console.warn(`Invalid path: ${path}, using default path`);
       path = '/opt/proxy/nginx.conf';
     }
     
@@ -155,31 +161,24 @@ export async function readConfigFile(path: string): Promise<string> {
     
     const data = await response.json();
     if (data.success) {
-      toast.success(`Successfully loaded configuration from ${path}`);
       return data.data;
     } else {
       throw new Error(data.message || 'Failed to read configuration');
     }
   } catch (error) {
     console.error('Failed to read config file:', error);
-    toast.error(`Failed to read configuration file: ${error.message}`);
     throw error;
   }
 }
 
-// Function to write config file to Docker volume
+// Function to write config file to Docker volume or uploads directory
 export async function writeConfigFile(path: string, content: string): Promise<void> {
   try {
     console.log(`Writing config to: ${path}`);
     
-    // Handle null or undefined path
-    if (!path) {
-      path = '/opt/proxy/nginx.conf';
-    }
-    
-    // Ensure the path is a string
-    if (typeof path !== 'string') {
-      console.warn(`Invalid path type: ${typeof path}, using default path`);
+    // Handle null, undefined or PointerEvent path
+    if (!path || path === '[object PointerEvent]' || typeof path !== 'string') {
+      console.warn(`Invalid path: ${path}, using default path`);
       path = '/opt/proxy/nginx.conf';
     }
     
@@ -192,14 +191,11 @@ export async function writeConfigFile(path: string, content: string): Promise<vo
     });
     
     const data = await response.json();
-    if (data.success) {
-      toast.success('Configuration saved successfully');
-    } else {
+    if (!data.success) {
       throw new Error(data.message || 'Failed to write configuration');
     }
   } catch (error) {
     console.error('Failed to write config file:', error);
-    toast.error(`Failed to write configuration file: ${error.message}`);
     throw error;
   }
 }
