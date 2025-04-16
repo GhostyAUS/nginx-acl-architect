@@ -78,7 +78,8 @@ app.post('/api/nginx/config', async (req, res) => {
 });
 
 // Catch-all route to serve the React app for any other routes
-app.get('*', (req, res) => {
+// Fix: Make sure the route pattern is valid
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
