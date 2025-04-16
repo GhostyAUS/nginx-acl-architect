@@ -30,14 +30,13 @@ export function generateNginxFile(config: NginxConfig): string {
 // Function to load Nginx config from local storage or file
 export async function loadNginxConfig(): Promise<NginxConfig> {
   try {
-    // Check if we have a config in local storage
     const savedConfig = localStorage.getItem('nginxConfig');
     
     if (savedConfig) {
       return JSON.parse(savedConfig);
     }
     
-    // Default empty config if nothing is found
+    // Return a default config that matches NginxConfig type
     return {
       serverName: 'default',
       port: 80,
@@ -49,7 +48,7 @@ export async function loadNginxConfig(): Promise<NginxConfig> {
     console.error('Failed to load nginx config:', error);
     toast.error('Failed to load nginx configuration');
     
-    // Return a default empty config
+    // Return a default config that matches NginxConfig type
     return {
       serverName: 'default',
       port: 80,
