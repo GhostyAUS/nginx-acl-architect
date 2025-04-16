@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Trash, Plus, Save, Edit } from 'lucide-react';
-import { UrlAclGroup } from '@/types/nginx';
+import { UrlAclEntry, UrlAclGroup } from '@/types/nginx';
 import UrlAclRuleRow from './UrlAclRuleRow';
 
 interface UrlAclGroupCardProps {
@@ -15,7 +15,7 @@ interface UrlAclGroupCardProps {
 const UrlAclGroupCard: FC<UrlAclGroupCardProps> = ({ group, onUpdateGroup }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(group.name);
-  const [newRule, setNewRule] = useState('');
+  const [newPattern, setNewPattern] = useState('');
 
   const handleSaveGroupName = () => {
     if (editedName.trim()) {
@@ -28,21 +28,27 @@ const UrlAclGroupCard: FC<UrlAclGroupCardProps> = ({ group, onUpdateGroup }) => 
   };
 
   const handleAddRule = () => {
-    if (newRule.trim()) {
+    if (newPattern.trim()) {
+      const newEntry: UrlAclEntry = {
+        pattern: newPattern.trim(),
+        value: "1",
+        description: "",
+        isRegex: false
+      };
       onUpdateGroup({
         ...group,
-        rules: [...group.rules, newRule.trim()]
+        entries: [...group.entries, newEntry]
       });
-      setNewRule('');
+      setNewPattern('');
     }
   };
 
   const handleRemoveRule = (index: number) => {
-    const updatedRules = [...group.rules];
-    updatedRules.splice(index, 1);
+    const updatedEntries = [...group.entries];
+    updatedEntries.splice(index, 1);
     onUpdateGroup({
       ...group,
-      rules: updatedRules
+      entries: updatedEntries
     });
   };
 
@@ -77,10 +83,10 @@ const UrlAclGroupCard: FC<UrlAclGroupCardProps> = ({ group, onUpdateGroup }) => 
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {group.rules.map((rule, index) => (
+          {group.entries.map((entry, index) => (
             <UrlAclRuleRow
-              key={`${rule}-${index}`}
-              rule={rule}
+              key={`${entry.pattern}-${index}`}
+              rule={entry.pattern}
               onRemove={() => handleRemoveRule(index)}
             />
           ))}
@@ -88,8 +94,8 @@ const UrlAclGroupCard: FC<UrlAclGroupCardProps> = ({ group, onUpdateGroup }) => 
           <div className="flex mt-4">
             <Input
               placeholder="Add new URL rule (e.g. *.microsoft.com)"
-              value={newRule}
-              onChange={(e) => setNewRule(e.target.value)}
+              value={newPattern}
+              onChange={(e) => setNewPattern(e.target.value)}
               className="flex-1"
             />
             <Button onClick={handleAddRule} className="ml-2">
