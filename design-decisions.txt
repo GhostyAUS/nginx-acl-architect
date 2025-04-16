@@ -1,3 +1,4 @@
+
 # NGINX ACL Architect Design Decisions
 
 ## File Paths and Container Configuration (2025-04-16)
@@ -47,5 +48,15 @@
   Resolution: Standardized path to '/opt/proxy/nginx.conf' across all components
   Related Decision: File paths standardization in File Paths section
   Prevention: All file paths now documented in File Paths section
+
+- Error: path-to-regexp build error
+  Resolution: Added path-to-regexp to external packages in esbuild configuration
+  Recurrence: First occurrence
+  Root Cause: Conflict between esbuild bundling and path-to-regexp package
+  Alternative Solutions:
+  1. Pin to a specific version of path-to-regexp
+  2. Use a different routing approach that doesn't rely on path-to-regexp
+  3. Implement custom route matching without using external libraries
+  Prevention: Add comprehensive external package list in build.js
 
 This file will be updated as new design decisions are made or existing ones are modified.
