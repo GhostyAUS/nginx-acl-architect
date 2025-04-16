@@ -1,4 +1,3 @@
-
 // App state
 const state = {
   currentRoute: 'dashboard',
@@ -446,28 +445,23 @@ function loadConfig() {
   const configEditor = document.getElementById('config-editor');
   configEditor.placeholder = 'Loading configuration...';
   
-  // Use a direct relative path to the API endpoint
-  fetch('./api.php?action=config')
+  // Use the Express API endpoint instead of PHP
+  fetch('/api/nginx/config')
     .then(response => {
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-      return response.json();
+      return response.text();
     })
     .then(data => {
-      if (data.success) {
-        configEditor.value = data.data;
-        state.config.loaded = true;
-        state.config.content = data.data;
-        showToast('Configuration loaded successfully', 'success');
-      } else {
-        showToast('Failed to load configuration: ' + data.message, 'error');
-        configEditor.placeholder = 'Error loading configuration';
-      }
+      configEditor.value = data;
+      state.config.loaded = true;
+      state.config.content = data;
+      showToast('Configuration loaded successfully', 'success');
     })
     .catch(error => {
       console.error('Error loading config:', error);
-      showToast('Failed to load configuration', 'error');
+      showToast('Failed to load configuration: ' + error.message, 'error');
       configEditor.placeholder = 'Error loading configuration';
     });
 }
@@ -482,29 +476,26 @@ function saveConfig() {
     return;
   }
   
-  // Use a direct relative path to the API endpoint with JSON content type
-  fetch('./api.php', {
+  // Use the Express API endpoint instead of PHP
+  fetch('/api/nginx/config', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'text/plain'
     },
-    body: JSON.stringify({
-      action: 'saveConfig',
-      config: configContent
-    })
+    body: configContent
   })
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        showToast('Configuration saved successfully', 'success');
+        showToast(data.message, 'success');
         state.config.content = configContent;
       } else {
-        showToast('Failed to save configuration: ' + data.message, 'error');
+        showToast(data.message, 'error');
       }
     })
     .catch(error => {
       console.error('Error saving config:', error);
-      showToast('Failed to save configuration', 'error');
+      showToast('Failed to save configuration: ' + error.message, 'error');
     });
 }
 

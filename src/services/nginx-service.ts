@@ -1,3 +1,4 @@
+
 import { NginxConfig } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
@@ -23,7 +24,7 @@ export async function loadNginxConfig(): Promise<NginxConfig> {
 // Load the nginx configuration file from the server
 export async function loadDefaultNginxConfig(): Promise<string> {
   try {
-    // Make a request to our server endpoint that reads the nginx.conf file
+    // Make a request to our Express server endpoint that reads the nginx.conf file
     const response = await fetch('/api/nginx/config');
     
     if (!response.ok) {
@@ -56,7 +57,7 @@ export async function saveNginxConfig(config: NginxConfig): Promise<boolean> {
     const generatedConfig = generateNginxConfig(config);
     console.log('Generated NGINX config:', generatedConfig);
     
-    // Send the updated configuration to our server endpoint
+    // Send the updated configuration to our Express server endpoint
     const response = await fetch('/api/nginx/config', {
       method: 'POST',
       headers: {
