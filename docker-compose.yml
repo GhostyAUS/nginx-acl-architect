@@ -35,10 +35,9 @@ services:
     working_dir: /app
     command: >
       sh -c "npm ci &&
-             npm install -g vite @vitejs/plugin-react-swc &&
-             npm install -D lovable-tagger &&
-             vite build &&
              npm install -g serve &&
+             echo 'Building project...' &&
+             node build.js &&
              serve -s dist -l 3000 --listen-host 0.0.0.0"
     restart: always
     depends_on:

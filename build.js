@@ -1,0 +1,65 @@
+
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+console.log('Starting custom build process...');
+
+// Create dist directory if it doesn't exist
+if (!fs.existsSync('dist')) {
+  fs.mkdirSync('dist');
+}
+
+try {
+  // Install esbuild (a fast JavaScript bundler)
+  console.log('Installing esbuild...');
+  execSync('npm install -g esbuild', { stdio: 'inherit' });
+  
+  // Copy public files to dist
+  console.log('Copying public files...');
+  if (fs.existsSync('public')) {
+    const publicFiles = fs.readdirSync('public');
+    for (const file of publicFiles) {
+      fs.copyFileSync(
+        path.join('public', file),
+        path.join('dist', file)
+      );
+    }
+  }
+  
+  // Copy index.html and update paths
+  console.log('Setting up index.html...');
+  let indexContent = fs.readFileSync('index.html', 'utf8');
+  indexContent = indexContent.replace(
+    '<script type="module" src="/src/main.tsx"></script>',
+    '<script src="main.js"></script>'
+  );
+  fs.writeFileSync('dist/index.html', indexContent);
+
+  // Bundle JavaScript/TypeScript
+  console.log('Bundling JavaScript...');
+  execSync(
+    'esbuild src/main.tsx --bundle --minify --outfile=dist/main.js --format=esm --loader:.js=jsx --loader:.ts=tsx --loader:.tsx=tsx', 
+    { stdio: 'inherit' }
+  );
+
+  // Add CSS
+  console.log('Bundling CSS...');
+  execSync(
+    'esbuild src/index.css --bundle --minify --outfile=dist/index.css',
+    { stdio: 'inherit' }
+  );
+
+  // Add CSS link to index.html
+  let finalIndexContent = fs.readFileSync('dist/index.html', 'utf8');
+  finalIndexContent = finalIndexContent.replace(
+    '</head>',
+    '  <link rel="stylesheet" href="index.css" />\n  </head>'
+  );
+  fs.writeFileSync('dist/index.html', finalIndexContent);
+
+  console.log('Build completed successfully!');
+} catch (error) {
+  console.error('Build failed:', error);
+  process.exit(1);
+}
