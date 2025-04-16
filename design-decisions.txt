@@ -1,0 +1,37 @@
+
+# NGINX ACL Architect Design Decisions
+
+## File Paths and Container Configuration (2025-04-16)
+- NGINX configuration file path is consistently set to '/opt/proxy/nginx.conf' across all components
+- Both nginx-proxy and nginx-acl-architect containers need read-write (rw) access to nginx.conf
+- Mount nginx.conf at the same path in both containers to maintain consistency
+- Logs directory is mounted as read-only in the architect container but read-write in nginx container
+
+## Server Configuration (2025-04-16)
+- Express server handles both static file serving and API endpoints
+- All non-API routes serve the SPA index.html
+- API endpoints are prefixed with '/api/'
+- Configuration changes are validated before being applied
+- Backup is created before applying new configuration
+- Failed configurations are automatically rolled back
+
+## Security Measures (2025-04-16)
+- NGINX configuration is tested before being applied
+- Automatic rollback on failed configuration
+- Backup creation before any configuration changes
+- Configuration validation happens both client and server side
+
+## UI/UX Decisions (2025-04-16)
+- Settings page provides raw configuration editor with validation
+- Toast notifications for all important actions and errors
+- Help dialog explains configuration format and important notes
+- Consistent use of shadcn/ui components
+- All forms have validation before submission
+
+## State Management (2025-04-16)
+- Configuration state managed locally in components
+- API calls for loading and saving configuration
+- Toast notifications for operation feedback
+- Error states handled with user-friendly messages
+
+This file will be updated as new design decisions are made or existing ones are modified.
