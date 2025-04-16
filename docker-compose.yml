@@ -33,7 +33,7 @@ services:
       - /opt/proxy/logs:/var/log/nginx:ro
     working_dir: /app
     command: >
-      sh -c "npm ci &&
+      sh -c "npm install express fs-extra && 
              echo 'Building project...' &&
              node build.js &&
              node server.js"

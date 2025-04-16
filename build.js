@@ -41,16 +41,16 @@ try {
   `;
   
   indexContent = indexContent.replace(
-    '<script type="module" src="/src/main.tsx"></script>',
+    /<script type="module" src="\/src\/main.*?"><\/script>/,
     scriptTags
   );
   
   fs.writeFileSync('dist/index.html', indexContent);
 
-  // Bundle JavaScript without React dependencies
+  // Bundle JavaScript - explicitly exclude React and path-to-regexp
   console.log('Bundling JavaScript...');
   execSync(
-    'esbuild src/main.js --bundle --minify --outfile=dist/main.js --format=iife', 
+    'esbuild src/main.js --bundle --minify --outfile=dist/main.js --format=iife --external:path-to-regexp --external:react --external:react-dom --external:react-router-dom', 
     { stdio: 'inherit' }
   );
 

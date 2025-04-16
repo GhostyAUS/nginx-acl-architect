@@ -14,6 +14,7 @@ const NGINX_CONF_PATH = '/opt/proxy/nginx.conf';  // Consistent path across all 
 
 // Middleware to parse text
 app.use(express.text());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // API endpoint to get the nginx configuration
