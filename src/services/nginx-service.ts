@@ -1,3 +1,4 @@
+
 import { NginxConfig } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
@@ -5,6 +6,20 @@ import { validateNginxConfig, validateAndFixNginxConfig } from './nginx-validato
 
 // Define path constants
 export const DEFAULT_NGINX_CONF_PATH = '/opt/proxy/nginx.conf';
+
+// Load the nginx configuration from the server
+export async function loadNginxConfig(): Promise<NginxConfig> {
+  try {
+    const configText = await loadDefaultNginxConfig();
+    const config = parseNginxConfig(configText);
+    console.log('Successfully parsed nginx configuration', config);
+    return config;
+  } catch (error) {
+    console.error('Failed to parse nginx config:', error);
+    toast.error('Failed to parse nginx configuration. Check syntax and try again.');
+    throw error;
+  }
+}
 
 // Load the nginx configuration file from the server
 export async function loadDefaultNginxConfig(): Promise<string> {
