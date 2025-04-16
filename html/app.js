@@ -1,3 +1,4 @@
+
 // App state
 const state = {
   currentRoute: 'dashboard',
@@ -391,6 +392,7 @@ function renderSettings() {
           <label for="config-path">Configuration File Path</label>
           <div class="input-group">
             <input type="text" id="config-path" value="${state.config.path}" placeholder="Path to nginx.conf">
+            <button id="load-path" class="button button-secondary">Load</button>
             <button id="browse-config" class="button button-outline">Browse...</button>
           </div>
           <input type="file" id="config-file-input" style="display: none;">
@@ -430,6 +432,10 @@ function renderSettings() {
   
   // Add event listeners for this page
   document.getElementById('load-config').addEventListener('click', loadConfig);
+  document.getElementById('load-path').addEventListener('click', () => {
+    const path = document.getElementById('config-path').value;
+    loadConfig(path);
+  });
   document.getElementById('save-config').addEventListener('click', saveConfig);
   document.getElementById('browse-config').addEventListener('click', () => {
     document.getElementById('config-file-input').click();
@@ -437,6 +443,14 @@ function renderSettings() {
   
   // File input change handler
   document.getElementById('config-file-input').addEventListener('change', handleFileSelect);
+  
+  // Config path input enter key handler
+  document.getElementById('config-path').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const path = document.getElementById('config-path').value;
+      loadConfig(path);
+    }
+  });
   
   // Load config when settings page is shown
   loadConfig();
@@ -473,15 +487,19 @@ function renderNotFound() {
 }
 
 // Load NGINX configuration
-function loadConfig() {
+function loadConfig(path) {
   const configEditor = document.getElementById('config-editor');
-  const configPath = document.getElementById('config-path').value;
+  const configPath = path || document.getElementById('config-path').value;
   
   configEditor.placeholder = 'Loading configuration...';
   state.config.path = configPath;
   
-  // Use the Express API endpoint
-  fetch('/api/nginx/config')
+  // Use a timestamp to prevent caching
+  const timestamp = new Date().getTime();
+  const url = `/api/nginx/config?path=${encodeURIComponent(configPath)}&t=${timestamp}`;
+  console.log(`Loading config from: ${url}`);
+  
+  fetch(url)
     .then(response => {
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -504,6 +522,7 @@ function loadConfig() {
 // Save NGINX configuration
 function saveConfig() {
   const configEditor = document.getElementById('config-editor');
+  const configPath = document.getElementById('config-path').value;
   const configContent = configEditor.value;
   
   if (!configContent.trim()) {
@@ -511,8 +530,10 @@ function saveConfig() {
     return;
   }
   
-  // Use the Express API endpoint
-  fetch('/api/nginx/config', {
+  const url = `/api/nginx/config?path=${encodeURIComponent(configPath)}`;
+  console.log(`Saving config to: ${url}`);
+  
+  fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'text/plain'

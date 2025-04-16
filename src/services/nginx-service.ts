@@ -22,10 +22,13 @@ export async function loadNginxConfig(): Promise<NginxConfig> {
 }
 
 // Load the nginx configuration file from the server
-export async function loadDefaultNginxConfig(): Promise<string> {
+export async function loadDefaultNginxConfig(path?: string): Promise<string> {
   try {
     // Make a request to our Express server endpoint that reads the nginx.conf file
-    const response = await fetch('/api/nginx/config');
+    const url = path ? `/api/nginx/config?path=${encodeURIComponent(path)}` : '/api/nginx/config';
+    console.log('Loading config from:', url);
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
@@ -52,18 +55,20 @@ export function fixNginxSyntaxErrors(configText: string): string {
 }
 
 // Save the nginx configuration
-export async function saveNginxConfig(config: NginxConfig): Promise<boolean> {
+export async function saveNginxConfig(config: NginxConfig | string, path?: string): Promise<boolean> {
   try {
-    const generatedConfig = generateNginxConfig(config);
-    console.log('Generated NGINX config:', generatedConfig);
+    const configData = typeof config === 'string' ? config : generateNginxConfig(config);
+    console.log('Generated NGINX config, saving to path:', path || DEFAULT_NGINX_CONF_PATH);
     
     // Send the updated configuration to our Express server endpoint
-    const response = await fetch('/api/nginx/config', {
+    const url = path ? `/api/nginx/config?path=${encodeURIComponent(path)}` : '/api/nginx/config';
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain',
       },
-      body: generatedConfig,
+      body: configData,
     });
     
     if (!response.ok) {

@@ -26,9 +26,11 @@ services:
     environment:
       - TZ=Australia/Perth
     volumes:
-      - ./html:/usr/share/nginx/html:rw  # Changed from ro to rw to allow file operations
-      - /opt/proxy/nginx.conf:/opt/proxy/nginx.conf:rw
-      - /opt/proxy/logs:/var/log/nginx:rw
+      - ./html:/usr/share/nginx/html:rw  # Allow read-write access
+      - /opt/proxy/nginx.conf:/opt/proxy/nginx.conf:rw  # Direct access to nginx.conf
+      - /opt/proxy/nginx.conf:/usr/share/nginx/html/nginx.conf:rw  # Alternative access path
+      - /usr/local/nginx/conf:/usr/share/nginx/html/nginx_conf:rw  # Access to NGINX conf directory
+      - /opt/proxy/logs:/var/log/nginx:rw  # Access to logs
     ports:
       - "3000:80"
     restart: always

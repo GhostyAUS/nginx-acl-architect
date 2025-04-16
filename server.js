@@ -16,16 +16,27 @@ const NGINX_CONF_PATH = '/opt/proxy/nginx.conf';
 app.use(express.text());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
-app.use(express.static(path.join(__dirname, 'html')));  // Serve files from html directory
+app.use(express.static(path.join(__dirname, 'html'), { 
+  setHeaders: (res, path) => {
+    // Prevent PHP files from being served as static content
+    if (path.endsWith('.php')) {
+      res.set('Content-Type', 'text/plain');
+    }
+  }
+}));
 
 // API endpoint to get the nginx configuration
 app.get('/api/nginx/config', async (req, res) => {
   try {
-    const data = await fs.readFile(NGINX_CONF_PATH, 'utf8');
+    const configPath = req.query.path || NGINX_CONF_PATH;
+    console.log(`Reading configuration from: ${configPath}`);
+    
+    const data = await fs.readFile(configPath, 'utf8');
+    res.set('Content-Type', 'text/plain');
     res.send(data);
   } catch (error) {
     console.error('Error reading nginx config:', error);
-    res.status(500).send('Error reading nginx configuration file');
+    res.status(500).send(`Error reading nginx configuration file: ${error.message}`);
   }
 });
 
@@ -33,13 +44,17 @@ app.get('/api/nginx/config', async (req, res) => {
 app.post('/api/nginx/config', async (req, res) => {
   try {
     const configData = req.body;
+    const configPath = req.query.path || NGINX_CONF_PATH;
+    console.log(`Saving configuration to: ${configPath}`);
     
     // First, create a backup of the current configuration
-    const backupPath = `${NGINX_CONF_PATH}.bak.${Date.now()}`;
-    await fs.copyFile(NGINX_CONF_PATH, backupPath);
+    const backupPath = `${configPath}.bak.${Date.now()}`;
+    await fs.copyFile(configPath, backupPath);
+    console.log(`Created backup at: ${backupPath}`);
     
     // Save the new configuration
-    await fs.writeFile(NGINX_CONF_PATH, configData);
+    await fs.writeFile(configPath, configData);
+    console.log('Configuration saved successfully');
     
     // Test if the new configuration is valid
     exec('docker exec nginx-forward-proxy nginx -t', (error, stdout, stderr) => {
@@ -47,7 +62,7 @@ app.post('/api/nginx/config', async (req, res) => {
         console.error('Nginx configuration test failed:', stderr);
         
         // If test fails, revert to backup
-        fs.copyFile(backupPath, NGINX_CONF_PATH).then(() => {
+        fs.copyFile(backupPath, configPath).then(() => {
           console.log('Reverted to backup configuration');
         });
         
@@ -79,6 +94,11 @@ app.post('/api/nginx/config', async (req, res) => {
   }
 });
 
+// Block direct access to PHP files
+app.get('*.php', (req, res) => {
+  res.status(403).send('Direct access to PHP files is not allowed');
+});
+
 // Serve index.html for all non-API routes
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api/')) {
@@ -89,4 +109,5 @@ app.get('*', (req, res) => {
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  console.log(`NGINX configuration file path: ${NGINX_CONF_PATH}`);
 });

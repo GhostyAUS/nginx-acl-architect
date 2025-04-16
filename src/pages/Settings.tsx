@@ -14,28 +14,35 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 
 const Settings: FC = () => {
   const [configText, setConfigText] = useState('');
-  const [configPath, setConfigPath] = useState('');
+  const [configPath, setConfigPath] = useState(DEFAULT_NGINX_CONF_PATH);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [hasValidationErrors, setHasValidationErrors] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Load the default nginx.conf on component mount
-    const loadConfig = async () => {
-      try {
-        const config = await loadDefaultNginxConfig();
-        // Validate and fix any syntax issues automatically on load
-        const fixedConfig = validateAndFixNginxConfig(config);
-        setConfigText(fixedConfig);
-        setConfigPath(DEFAULT_NGINX_CONF_PATH);
-      } catch (error) {
-        console.error('Error loading default config:', error);
-        toast.error('Failed to load default nginx configuration');
-      }
-    };
-
     loadConfig();
   }, []);
+
+  const loadConfig = async (path?: string) => {
+    setIsLoading(true);
+    try {
+      console.log(`Loading config from path: ${path || configPath}`);
+      const config = await loadDefaultNginxConfig(path || configPath);
+      // Validate and fix any syntax issues automatically on load
+      const fixedConfig = validateAndFixNginxConfig(config);
+      setConfigText(fixedConfig);
+      if (path) setConfigPath(path);
+      toast.success('Configuration loaded successfully');
+      setHasValidationErrors(false);
+    } catch (error) {
+      console.error('Error loading config:', error);
+      toast.error('Failed to load configuration file');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleValidateConfig = () => {
     try {
@@ -83,9 +90,8 @@ const Settings: FC = () => {
         toast.success('Fixed syntax errors in configuration');
       }
       
-      // Parse the config text to validate it
-      const parsed = parseNginxConfig(fixedConfig);
-      await saveNginxConfig(parsed);
+      // Save directly without parsing to avoid any transformation issues
+      await saveNginxConfig(fixedConfig, configPath);
       toast.success('Configuration saved successfully');
       setHasValidationErrors(false);
     } catch (error) {
@@ -116,6 +122,16 @@ const Settings: FC = () => {
 
   const openFileBrowser = () => {
     fileInputRef.current?.click();
+  };
+
+  const handlePathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setConfigPath(e.target.value);
+  };
+
+  const handlePathKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      loadConfig();
+    }
   };
 
   return (
@@ -151,6 +167,7 @@ const Settings: FC = () => {
                   <li>For IP whitelist entries, use CIDR notation (e.g., 192.168.1.1/32).</li>
                   <li>URL patterns can use regular expressions with the "~" prefix.</li>
                   <li>You can also browse and upload a local configuration file.</li>
+                  <li>Enter a file path and press Enter to load a different config file.</li>
                 </ul>
               </div>
             </DialogContent>
@@ -161,10 +178,19 @@ const Settings: FC = () => {
             <Input
               type="text"
               value={configPath}
-              placeholder="No file selected"
-              readOnly
+              onChange={handlePathChange}
+              onKeyDown={handlePathKeyDown}
+              placeholder="Path to nginx.conf file"
               className="flex-grow"
             />
+            <Button 
+              variant="secondary" 
+              className="flex items-center gap-2" 
+              onClick={() => loadConfig()}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Loading...' : 'Load File'}
+            </Button>
             <Button variant="outline" className="flex items-center gap-2" onClick={openFileBrowser}>
               <FolderOpen className="h-4 w-4" />
               Browse
@@ -205,7 +231,7 @@ const Settings: FC = () => {
             className="font-mono h-96 mb-4"
             value={configText}
             onChange={(e) => setConfigText(e.target.value)}
-            placeholder="Paste your nginx.conf content here..."
+            placeholder={isLoading ? "Loading configuration..." : "Paste your nginx.conf content here..."}
           />
 
           <div className="flex justify-end gap-2">
