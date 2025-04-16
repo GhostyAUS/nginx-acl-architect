@@ -1,3 +1,4 @@
+
 import { NginxConfig } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
@@ -38,8 +39,6 @@ export async function loadNginxConfig(): Promise<NginxConfig> {
     
     // Return a default config that matches NginxConfig type
     return {
-      serverName: 'default',
-      port: 80,
       ipAclGroups: [],
       urlAclGroups: [],
       combinedAcls: []
@@ -50,8 +49,6 @@ export async function loadNginxConfig(): Promise<NginxConfig> {
     
     // Return a default config that matches NginxConfig type
     return {
-      serverName: 'default',
-      port: 80,
       ipAclGroups: [],
       urlAclGroups: [],
       combinedAcls: []
