@@ -28,7 +28,7 @@ services:
     volumes:
       - ./html:/usr/share/nginx/html:ro
       - /opt/proxy/nginx.conf:/opt/proxy/nginx.conf:rw
-      - /opt/proxy/logs:/var/log/nginx:ro
+      - /opt/proxy/logs:/var/log/nginx:rw
     ports:
       - "3000:80"
     restart: always
