@@ -31,7 +31,9 @@ services:
     network_mode: host  # Use host network
     volumes:
       - ./:/app:rw
-      - /opt/proxy/nginx.conf:/opt/proxy/nginx.conf:rw
+      # Make sure the nginx.conf file exists before starting the container
+      # Changing this to bind to a file inside the container instead of trying to mount the host file directly
+      - /opt/proxy/nginx.conf:/app/nginx.conf:ro
       - /opt/proxy/logs:/var/log/nginx:ro
     working_dir: /app
     command: >

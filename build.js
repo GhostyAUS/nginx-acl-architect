@@ -52,7 +52,7 @@ try {
   // Bundle JavaScript/TypeScript with proper React configuration - added external flag for problematic packages
   console.log('Bundling JavaScript...');
   execSync(
-    'esbuild src/main.tsx --bundle --minify --outfile=dist/main.js --format=iife --loader:.js=jsx --loader:.ts=tsx --loader:.tsx=tsx --jsx=automatic --global-name=App --external:react-router-dom --external:path-to-regexp --external:path-to-regexp', 
+    'esbuild src/main.tsx --bundle --minify --outfile=dist/main.js --format=iife --loader:.js=jsx --loader:.ts=tsx --loader:.tsx=tsx --jsx=automatic --global-name=App --external:react-router-dom --external:path-to-regexp', 
     { stdio: 'inherit' }
   );
 
