@@ -1,65 +1,53 @@
 
 # NGINX ACL Architect
 
-A lightweight tool for managing NGINX Access Control Lists.
+A simple web-based interface for managing NGINX access control lists.
 
 ## Overview
 
-NGINX ACL Architect provides a user-friendly interface for managing IP-based and URL-based access control lists in NGINX configurations. This tool is designed to simplify the process of maintaining whitelists and blacklists for proxy servers.
+NGINX ACL Architect provides a user-friendly interface to manage IP and URL access control lists for NGINX forward proxy configurations. It allows you to:
 
-## Deployment Instructions
+- View and edit the NGINX configuration file
+- Manage IP-based access control lists
+- Manage URL-based access control lists
+- Create combined ACL rules
+
+## Deployment
+
+The application is containerized and can be deployed using Docker Compose.
 
 ### Prerequisites
-- Docker and Docker Compose installed on the host machine
-- Git to clone the repository
 
-### Deployment Steps
+- Docker and Docker Compose installed
+- Linux-based host system
 
-1. **Clone the repository**
-```bash
-git clone <repository-url>
-cd nginx-acl-architect
-```
+### Installation
 
-2. **Run the setup script**
-```bash
-chmod +x setup.sh
-./setup.sh
-```
+1. Clone this repository
+2. Run the setup script:
+   ```
+   chmod +x setup.sh
+   ./setup.sh
+   ```
+3. Start the containers:
+   ```
+   docker-compose up -d
+   ```
 
-3. **Start the application**
-```bash
-docker-compose up -d
-```
+## Architecture
 
-4. **Access the application**
-- NGINX ACL Architect UI: http://localhost:3000
-- NGINX Proxy: http://localhost:8080
+The application consists of:
 
-### Updating the Application
+- NGINX forward proxy container
+- NGINX web server container hosting the web interface
+- Simple PHP-based API for configuration management
 
-To update the application with the latest changes:
+## Security Considerations
 
-```bash
-# Pull latest changes
-git pull
+- The application assumes it's running in a protected environment
+- All configuration changes are backed up before being applied
+- Always test your configuration changes in a non-production environment first
 
-# Rebuild and restart containers
-docker-compose down
-docker-compose up -d --build
-```
+## License
 
-### Monitoring and Logs
-
-- View application logs: `docker-compose logs nginx-acl-architect`
-- View proxy logs: `docker-compose logs nginx-proxy`
-- Check the `./logs/` directory for detailed NGINX logs
-
-## Technical Details
-
-This application is built using:
-- Vanilla JavaScript for the frontend
-- Express.js for the backend API
-- Docker for containerization
-
-No React or path-to-regexp dependencies are used to ensure maximum compatibility and minimal dependencies.
+This project is open source and available under the MIT License.
