@@ -28,6 +28,52 @@ export function generateNginxFile(config: NginxConfig): string {
   }
 }
 
+// Function to load Nginx config from local storage or file
+export async function loadNginxConfig(): Promise<NginxConfig> {
+  try {
+    // Check if we have a config in local storage
+    const savedConfig = localStorage.getItem('nginxConfig');
+    
+    if (savedConfig) {
+      return JSON.parse(savedConfig);
+    }
+    
+    // Default empty config if nothing is found
+    return {
+      serverName: 'default',
+      port: 80,
+      ipAclGroups: [],
+      urlAclGroups: [],
+      combinedAcls: []
+    };
+  } catch (error) {
+    console.error('Failed to load nginx config:', error);
+    toast.error('Failed to load nginx configuration');
+    
+    // Return a default empty config
+    return {
+      serverName: 'default',
+      port: 80,
+      ipAclGroups: [],
+      urlAclGroups: [],
+      combinedAcls: []
+    };
+  }
+}
+
+// Function to save Nginx config to local storage
+export async function saveNginxConfig(config: NginxConfig): Promise<void> {
+  try {
+    // Save to local storage
+    localStorage.setItem('nginxConfig', JSON.stringify(config));
+    toast.success('Configuration saved successfully');
+  } catch (error) {
+    console.error('Failed to save nginx config:', error);
+    toast.error('Failed to save nginx configuration');
+    throw error;
+  }
+}
+
 // Fix common Nginx syntax errors
 export function fixNginxSyntaxErrors(configText: string): string {
   // Replace "if ($variable = 0)" with "if ($variable != 1)"
