@@ -16,6 +16,7 @@ const NGINX_CONF_PATH = '/opt/proxy/nginx.conf';
 app.use(express.text());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'html')));  // Serve files from html directory
 
 // API endpoint to get the nginx configuration
 app.get('/api/nginx/config', async (req, res) => {

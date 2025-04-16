@@ -446,6 +446,7 @@ function loadConfig() {
   const configEditor = document.getElementById('config-editor');
   configEditor.placeholder = 'Loading configuration...';
   
+  // Use a direct relative path to the API endpoint
   fetch('./api.php?action=config')
     .then(response => {
       if (!response.ok) {
@@ -481,6 +482,7 @@ function saveConfig() {
     return;
   }
   
+  // Use a direct relative path to the API endpoint with JSON content type
   fetch('./api.php', {
     method: 'POST',
     headers: {

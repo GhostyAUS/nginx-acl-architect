@@ -26,7 +26,7 @@ services:
     environment:
       - TZ=Australia/Perth
     volumes:
-      - ./html:/usr/share/nginx/html:ro
+      - ./html:/usr/share/nginx/html:rw  # Changed from ro to rw to allow file operations
       - /opt/proxy/nginx.conf:/opt/proxy/nginx.conf:rw
       - /opt/proxy/logs:/var/log/nginx:rw
     ports:
