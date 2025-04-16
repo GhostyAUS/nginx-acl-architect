@@ -3,7 +3,6 @@ import { FC } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageTitle from '@/components/common/PageTitle';
 import { Server, Globe, CheckCircle, AlertTriangle } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 interface StatsCardProps {
@@ -68,7 +67,7 @@ const Dashboard: FC = () => {
         description="Manage and monitor your NGINX forward proxy access control lists"
         actions={
           <Button asChild>
-            <Link to="/settings">Configuration</Link>
+            <a href="#settings">Configuration</a>
           </Button>
         }
       />
@@ -97,7 +96,7 @@ const Dashboard: FC = () => {
               specific hosts, and test environments.
             </p>
             <Button asChild variant="outline">
-              <Link to="/ip-acls">Manage IP ACLs</Link>
+              <a href="#ip-acls">Manage IP ACLs</a>
             </Button>
           </CardContent>
         </Card>
@@ -112,7 +111,7 @@ const Dashboard: FC = () => {
               like Microsoft, RedHat, and CDN providers.
             </p>
             <Button asChild variant="outline">
-              <Link to="/url-acls">Manage URL ACLs</Link>
+              <a href="#url-acls">Manage URL ACLs</a>
             </Button>
           </CardContent>
         </Card>
