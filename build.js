@@ -34,16 +34,25 @@ try {
   // Copy index.html and update paths
   console.log('Setting up index.html...');
   let indexContent = fs.readFileSync('index.html', 'utf8');
+  
+  // Add React and ReactDOM scripts
+  const scriptTags = `
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="main.js"></script>
+  `;
+  
   indexContent = indexContent.replace(
     '<script type="module" src="/src/main.tsx"></script>',
-    '<script src="main.js"></script>'
+    scriptTags
   );
+  
   fs.writeFileSync('dist/index.html', indexContent);
 
-  // Bundle JavaScript/TypeScript
+  // Bundle JavaScript/TypeScript with improved configuration
   console.log('Bundling JavaScript...');
   execSync(
-    'esbuild src/main.tsx --bundle --minify --outfile=dist/main.js --format=esm --loader:.js=jsx --loader:.ts=tsx --loader:.tsx=tsx', 
+    'esbuild src/main.tsx --bundle --minify --outfile=dist/main.js --format=iife --loader:.js=jsx --loader:.ts=tsx --loader:.tsx=tsx --jsx=transform --external:react --external:react-dom', 
     { stdio: 'inherit' }
   );
 
