@@ -52,7 +52,7 @@ try {
   // Bundle JavaScript/TypeScript with improved configuration
   console.log('Bundling JavaScript...');
   execSync(
-    'esbuild src/main.tsx --bundle --minify --outfile=dist/main.js --format=iife --loader:.js=jsx --loader:.ts=tsx --loader:.tsx=tsx --jsx=transform --external:react --external:react-dom', 
+    'esbuild src/main.tsx --bundle --minify --outfile=dist/main.js --format=iife --loader:.js=jsx --loader:.ts=tsx --loader:.tsx=tsx --jsx=automatic --global-name=App', 
     { stdio: 'inherit' }
   );
 
