@@ -35,10 +35,8 @@ try {
   console.log('Setting up index.html...');
   let indexContent = fs.readFileSync('index.html', 'utf8');
   
-  // Add React and ReactDOM scripts
+  // Replace React script tags with our vanilla JS script
   const scriptTags = `
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="main.js"></script>
   `;
   
@@ -49,10 +47,10 @@ try {
   
   fs.writeFileSync('dist/index.html', indexContent);
 
-  // Bundle JavaScript/TypeScript with proper React configuration - expanded list of external packages
+  // Bundle JavaScript without React dependencies
   console.log('Bundling JavaScript...');
   execSync(
-    'esbuild src/main.tsx --bundle --minify --outfile=dist/main.js --format=iife --loader:.js=jsx --loader:.ts=tsx --loader:.tsx=tsx --jsx=automatic --global-name=App --external:react-router-dom --external:path-to-regexp --external:react-router', 
+    'esbuild src/main.js --bundle --minify --outfile=dist/main.js --format=iife', 
     { stdio: 'inherit' }
   );
 
