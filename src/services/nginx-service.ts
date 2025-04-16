@@ -4,14 +4,10 @@ import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
 import { validateNginxConfig, validateAndFixNginxConfig } from './nginx-validator';
 
-// Define path constants
-export const DEFAULT_NGINX_CONF_PATH = '/opt/proxy/nginx.conf';
-
-// Load the nginx configuration from the server
-export async function loadNginxConfig(): Promise<NginxConfig> {
+// Function to parse a file string into NginxConfig object
+export function parseNginxFile(fileContent: string): NginxConfig {
   try {
-    const configText = await loadDefaultNginxConfig();
-    const config = parseNginxConfig(configText);
+    const config = parseNginxConfig(fileContent);
     console.log('Successfully parsed nginx configuration', config);
     return config;
   } catch (error) {
@@ -21,29 +17,13 @@ export async function loadNginxConfig(): Promise<NginxConfig> {
   }
 }
 
-// Load the nginx configuration file from the server
-export async function loadDefaultNginxConfig(path?: string): Promise<string> {
+// Function to generate config file string from NginxConfig object
+export function generateNginxFile(config: NginxConfig): string {
   try {
-    // Make a request to our Express server endpoint that reads the nginx.conf file
-    const url = path ? `/api/nginx/config?path=${encodeURIComponent(path)}` : '/api/nginx/config';
-    console.log('Loading config from:', url);
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    
-    const configText = await response.text();
-    console.log('Successfully loaded nginx configuration from server');
-    
-    // Fix any potential syntax errors with the "=" operator in conditions
-    const fixedConfig = fixNginxSyntaxErrors(configText);
-    
-    return fixedConfig;
+    return generateNginxConfig(config);
   } catch (error) {
-    console.error('Failed to load default nginx config:', error);
-    toast.error('Failed to load nginx configuration file. Please check server logs.');
+    console.error('Failed to generate nginx config:', error);
+    toast.error('Failed to generate nginx configuration text.');
     throw error;
   }
 }
@@ -52,42 +32,6 @@ export async function loadDefaultNginxConfig(path?: string): Promise<string> {
 export function fixNginxSyntaxErrors(configText: string): string {
   // Replace "if ($variable = 0)" with "if ($variable != 1)"
   return configText.replace(/if\s*\(\$([a-zA-Z_]+)\s*=\s*0\)/g, 'if ($$$1 != 1)');
-}
-
-// Save the nginx configuration
-export async function saveNginxConfig(config: NginxConfig | string, path?: string): Promise<boolean> {
-  try {
-    const configData = typeof config === 'string' ? config : generateNginxConfig(config);
-    console.log('Generated NGINX config, saving to path:', path || DEFAULT_NGINX_CONF_PATH);
-    
-    // Send the updated configuration to our Express server endpoint
-    const url = path ? `/api/nginx/config?path=${encodeURIComponent(path)}` : '/api/nginx/config';
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-      body: configData,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to save configuration: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    
-    if (result.success) {
-      toast.success('NGINX configuration saved successfully');
-      return true;
-    } else {
-      throw new Error(result.message || 'Unknown error saving configuration');
-    }
-  } catch (error) {
-    console.error('Failed to save NGINX configuration:', error);
-    toast.error(`Failed to save NGINX configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    return false;
-  }
 }
 
 // Validate CIDR notation for IP addresses

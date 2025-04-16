@@ -1,48 +1,22 @@
 
-import { FC, useState, useEffect, useRef } from 'react';
+import { FC, useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageTitle from '@/components/common/PageTitle';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { saveNginxConfig, loadDefaultNginxConfig, DEFAULT_NGINX_CONF_PATH, fixNginxSyntaxErrors } from '@/services/nginx-service';
-import { parseNginxConfig, generateNginxConfig } from '@/services/nginx-parser';
-import { validateAndFixNginxConfig } from '@/services/nginx-validator';
 import { toast } from "sonner";
-import { FolderOpen, ShieldX, CheckCircle, Info } from 'lucide-react';
+import { FolderOpen, CheckCircle, Save, Upload, Info } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { validateAndFixNginxConfig } from '@/services/nginx-validator';
 
 const Settings: FC = () => {
   const [configText, setConfigText] = useState('');
-  const [configPath, setConfigPath] = useState(DEFAULT_NGINX_CONF_PATH);
+  const [fileName, setFileName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [hasValidationErrors, setHasValidationErrors] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    // Load the default nginx.conf on component mount
-    loadConfig();
-  }, []);
-
-  const loadConfig = async (path?: string) => {
-    setIsLoading(true);
-    try {
-      console.log(`Loading config from path: ${path || configPath}`);
-      const config = await loadDefaultNginxConfig(path || configPath);
-      // Validate and fix any syntax issues automatically on load
-      const fixedConfig = validateAndFixNginxConfig(config);
-      setConfigText(fixedConfig);
-      if (path) setConfigPath(path);
-      toast.success('Configuration loaded successfully');
-      setHasValidationErrors(false);
-    } catch (error) {
-      console.error('Error loading config:', error);
-      toast.error('Failed to load configuration file');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const saveFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleValidateConfig = () => {
     try {
@@ -62,47 +36,6 @@ const Settings: FC = () => {
     }
   };
 
-  const handleFormatConfig = () => {
-    try {
-      // Parse and regenerate to format
-      const parsed = parseNginxConfig(configText);
-      const formatted = generateNginxConfig(parsed);
-      setConfigText(formatted);
-      toast.success('Configuration formatted successfully');
-    } catch (error) {
-      console.error('Error formatting configuration:', error);
-      toast.error('Failed to format configuration. Check syntax and try again.');
-    }
-  };
-
-  const handleSaveConfig = async () => {
-    if (!configPath) {
-      toast.error('Please select a configuration file first');
-      return;
-    }
-
-    setIsUpdating(true);
-    try {
-      // Fix any syntax errors before parsing
-      const fixedConfig = validateAndFixNginxConfig(configText);
-      if (fixedConfig !== configText) {
-        setConfigText(fixedConfig);
-        toast.success('Fixed syntax errors in configuration');
-      }
-      
-      // Save directly without parsing to avoid any transformation issues
-      await saveNginxConfig(fixedConfig, configPath);
-      toast.success('Configuration saved successfully');
-      setHasValidationErrors(false);
-    } catch (error) {
-      console.error('Error saving configuration:', error);
-      toast.error('Failed to save configuration. Check syntax and try again.');
-      setHasValidationErrors(true);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -111,9 +44,10 @@ const Settings: FC = () => {
       const text = await file.text();
       const fixedConfig = validateAndFixNginxConfig(text);
       setConfigText(fixedConfig);
-      setConfigPath(file.name);
+      setFileName(file.name);
       
-      toast.success('Configuration file loaded successfully');
+      toast.success(`Configuration file "${file.name}" loaded successfully`);
+      setHasValidationErrors(false);
     } catch (error) {
       console.error('Error reading file:', error);
       toast.error('Failed to read configuration file');
@@ -124,26 +58,86 @@ const Settings: FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handlePathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setConfigPath(e.target.value);
+  const handleSaveFile = () => {
+    if (!configText.trim()) {
+      toast.error('Configuration cannot be empty');
+      return;
+    }
+
+    try {
+      // Create a blob with the configuration content
+      const blob = new Blob([configText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a download link and trigger it
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName || 'nginx.conf';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      toast.success('Configuration saved to file');
+    } catch (error) {
+      console.error('Error saving file:', error);
+      toast.error('Failed to save configuration file');
+    }
   };
 
-  const handlePathKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      loadConfig();
-    }
+  // Option to create a new empty configuration
+  const createNewConfig = () => {
+    setConfigText(`# NGINX Configuration File
+# Created with NGINX ACL Architect
+
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    # Access control settings
+    # Add your ACL configurations here
+    
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    keepalive_timeout  65;
+    
+    # Include configuration files
+    include /etc/nginx/conf.d/*.conf;
+}
+`);
+    setFileName('new-nginx.conf');
+    toast.success('Created new configuration template');
   };
 
   return (
     <div>
       <PageTitle
-        title="NGINX Configuration"
-        description="Advanced configuration settings for NGINX proxy ACLs"
+        title="NGINX Configuration Editor"
+        description="Edit your NGINX configuration files directly"
       />
 
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Raw Configuration Editor</CardTitle>
+          <CardTitle>Configuration Editor</CardTitle>
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -155,19 +149,17 @@ const Settings: FC = () => {
               <DialogHeader>
                 <DialogTitle>NGINX Configuration Help</DialogTitle>
                 <DialogDescription>
-                  This editor allows you to edit the NGINX configuration file directly. The file controls 
-                  IP whitelisting and URL filtering for the forward proxy.
+                  This is a simplified editor for NGINX configuration files.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 mt-4">
-                <h3 className="font-medium">Important Notes:</h3>
+                <h3 className="font-medium">Usage:</h3>
                 <ul className="list-disc pl-5 space-y-2">
-                  <li>The configuration is automatically validated and fixed when loaded.</li>
-                  <li>Use the Validate button to check your changes before saving.</li>
-                  <li>For IP whitelist entries, use CIDR notation (e.g., 192.168.1.1/32).</li>
-                  <li>URL patterns can use regular expressions with the "~" prefix.</li>
-                  <li>You can also browse and upload a local configuration file.</li>
-                  <li>Enter a file path and press Enter to load a different config file.</li>
+                  <li>Click "Browse" to open an existing nginx.conf file from your computer</li>
+                  <li>Click "Create New" to start with a template configuration</li>
+                  <li>Use "Validate" to check your configuration for syntax errors</li>
+                  <li>Click "Save File" to download the configuration to your computer</li>
+                  <li>After saving, you can upload the file to your server manually</li>
                 </ul>
               </div>
             </DialogContent>
@@ -177,27 +169,30 @@ const Settings: FC = () => {
           <div className="flex items-center gap-4 mb-4">
             <Input
               type="text"
-              value={configPath}
-              onChange={handlePathChange}
-              onKeyDown={handlePathKeyDown}
-              placeholder="Path to nginx.conf file"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              placeholder="No file selected"
               className="flex-grow"
+              readOnly
             />
             <Button 
               variant="secondary" 
               className="flex items-center gap-2" 
-              onClick={() => loadConfig()}
-              disabled={isLoading}
+              onClick={openFileBrowser}
             >
-              {isLoading ? 'Loading...' : 'Load File'}
-            </Button>
-            <Button variant="outline" className="flex items-center gap-2" onClick={openFileBrowser}>
               <FolderOpen className="h-4 w-4" />
               Browse
             </Button>
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2" 
+              onClick={createNewConfig}
+            >
+              <Upload className="h-4 w-4" />
+              Create New
+            </Button>
             <input
               ref={fileInputRef}
-              id="file-input"
               type="file"
               accept=".conf"
               className="hidden"
@@ -222,27 +217,22 @@ const Settings: FC = () => {
             )}
           </div>
 
-          <p className="mb-4 text-gray-600 dark:text-gray-400">
-            Edit the raw NGINX configuration file. Be careful with syntax as incorrect configurations
-            may cause the proxy to malfunction.
-          </p>
-
           <Textarea
             className="font-mono h-96 mb-4"
             value={configText}
             onChange={(e) => setConfigText(e.target.value)}
-            placeholder={isLoading ? "Loading configuration..." : "Paste your nginx.conf content here..."}
+            placeholder="Load a configuration file or create a new one..."
           />
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleFormatConfig}>
-              Format
-            </Button>
             <Button 
-              onClick={handleSaveConfig} 
-              disabled={isUpdating || !configPath || hasValidationErrors}
+              variant="default"
+              className="flex items-center gap-2"
+              onClick={handleSaveFile}
+              disabled={isUpdating || !configText.trim()}
             >
-              {isUpdating ? 'Saving...' : 'Save Configuration'}
+              <Save className="h-4 w-4" />
+              Save File
             </Button>
           </div>
         </CardContent>
