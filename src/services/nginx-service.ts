@@ -1,4 +1,3 @@
-
 import { NginxConfig } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
@@ -72,32 +71,48 @@ export async function saveNginxConfig(config: NginxConfig): Promise<void> {
 // List available config files from Docker volumes
 export async function listConfigFiles(): Promise<string[]> {
   try {
-    const locations = [
-      '/opt/proxy/nginx.conf',
-      '/opt/proxy/conf.d',
-      '/etc/nginx/conf.d'
-    ];
+    // Call the API to get the list of config files
+    const response = await fetch('/api/nginx/files');
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
     
-    // In a real implementation, this would scan the Docker volumes
-    // For now, return predefined locations as they're mounted in docker-compose
-    return locations;
+    const data = await response.json();
+    return data.success ? data.data : [];
   } catch (error) {
     console.error('Failed to list config files:', error);
     toast.error('Failed to list configuration files');
-    return [];
+    
+    // Return a default list of common paths when the API fails
+    return [
+      '/opt/proxy/nginx.conf',
+      '/opt/proxy/conf.d',
+      '/etc/nginx/conf.d',
+      '/usr/local/nginx/conf/nginx.conf'
+    ];
   }
 }
 
 // Function to read config file from Docker volume
 export async function readConfigFile(path: string): Promise<string> {
   try {
-    // This is where you'd implement actual file reading from Docker volumes
-    // For now, we'll show a toast explaining this needs to be implemented
-    toast.info('This feature requires server-side implementation to read from Docker volumes');
-    return '';
+    console.log(`Reading config from: ${path}`);
+    const response = await fetch(`/api/nginx/config?path=${encodeURIComponent(path)}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    if (data.success) {
+      toast.success(`Successfully loaded configuration from ${path}`);
+      return data.data;
+    } else {
+      throw new Error(data.message || 'Failed to read configuration');
+    }
   } catch (error) {
     console.error('Failed to read config file:', error);
-    toast.error('Failed to read configuration file');
+    toast.error(`Failed to read configuration file: ${error.message}`);
     throw error;
   }
 }
@@ -105,12 +120,24 @@ export async function readConfigFile(path: string): Promise<string> {
 // Function to write config file to Docker volume
 export async function writeConfigFile(path: string, content: string): Promise<void> {
   try {
-    // This is where you'd implement actual file writing to Docker volumes
-    // For now, we'll show a toast explaining this needs to be implemented
-    toast.info('This feature requires server-side implementation to write to Docker volumes');
+    console.log(`Writing config to: ${path}`);
+    const response = await fetch(`/api/nginx/config?path=${encodeURIComponent(path)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain'
+      },
+      body: content
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      toast.success('Configuration saved successfully');
+    } else {
+      throw new Error(data.message || 'Failed to write configuration');
+    }
   } catch (error) {
     console.error('Failed to write config file:', error);
-    toast.error('Failed to write configuration file');
+    toast.error(`Failed to write configuration file: ${error.message}`);
     throw error;
   }
 }
