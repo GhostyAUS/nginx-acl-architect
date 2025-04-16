@@ -1,4 +1,3 @@
-
 import { NginxConfig } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
@@ -70,6 +69,52 @@ export async function saveNginxConfig(config: NginxConfig): Promise<void> {
   } catch (error) {
     console.error('Failed to save nginx config:', error);
     toast.error('Failed to save nginx configuration');
+    throw error;
+  }
+}
+
+// List available config files from Docker volumes
+export async function listConfigFiles(): Promise<string[]> {
+  try {
+    const locations = [
+      '/opt/proxy/nginx.conf',
+      '/opt/proxy/conf.d',
+      '/etc/nginx/conf.d'
+    ];
+    
+    // In a real implementation, this would scan the Docker volumes
+    // For now, return predefined locations as they're mounted in docker-compose
+    return locations;
+  } catch (error) {
+    console.error('Failed to list config files:', error);
+    toast.error('Failed to list configuration files');
+    return [];
+  }
+}
+
+// Function to read config file from Docker volume
+export async function readConfigFile(path: string): Promise<string> {
+  try {
+    // This is where you'd implement actual file reading from Docker volumes
+    // For now, we'll show a toast explaining this needs to be implemented
+    toast.info('This feature requires server-side implementation to read from Docker volumes');
+    return '';
+  } catch (error) {
+    console.error('Failed to read config file:', error);
+    toast.error('Failed to read configuration file');
+    throw error;
+  }
+}
+
+// Function to write config file to Docker volume
+export async function writeConfigFile(path: string, content: string): Promise<void> {
+  try {
+    // This is where you'd implement actual file writing to Docker volumes
+    // For now, we'll show a toast explaining this needs to be implemented
+    toast.info('This feature requires server-side implementation to write to Docker volumes');
+  } catch (error) {
+    console.error('Failed to write config file:', error);
+    toast.error('Failed to write configuration file');
     throw error;
   }
 }

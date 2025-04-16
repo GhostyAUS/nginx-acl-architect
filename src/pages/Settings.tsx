@@ -1,4 +1,3 @@
-
 import { FC, useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,8 +14,29 @@ const Settings: FC = () => {
   const [fileName, setFileName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [hasValidationErrors, setHasValidationErrors] = useState(false);
+  const [availableConfigs, setAvailableConfigs] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const saveFileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Load available config files when component mounts
+    listConfigFiles().then(files => {
+      setAvailableConfigs(files);
+    });
+  }, []);
+
+  const handleConfigSelect = async (path: string) => {
+    try {
+      const content = await readConfigFile(path);
+      if (content) {
+        setConfigText(content);
+        setFileName(path);
+        toast.success(`Loaded configuration from ${path}`);
+      }
+    } catch (error) {
+      console.error('Error loading config:', error);
+      toast.error('Failed to load configuration');
+    }
+  };
 
   const handleValidateConfig = () => {
     try {
@@ -58,38 +78,35 @@ const Settings: FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleSaveFile = () => {
+  const handleSaveFile = async () => {
     if (!configText.trim()) {
       toast.error('Configuration cannot be empty');
       return;
     }
 
     try {
-      // Create a blob with the configuration content
-      const blob = new Blob([configText], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      
-      // Create a download link and trigger it
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName || 'nginx.conf';
-      document.body.appendChild(a);
-      a.click();
-      
-      // Clean up
-      setTimeout(() => {
+      if (fileName.startsWith('/opt/proxy/') || fileName.startsWith('/etc/nginx/')) {
+        await writeConfigFile(fileName, configText);
+      } else {
+        // Default save to file system if not a Docker volume path
+        const blob = new Blob([configText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName || 'nginx.conf';
+        document.body.appendChild(a);
+        a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-      }, 100);
+      }
       
-      toast.success('Configuration saved to file');
+      toast.success('Configuration saved successfully');
     } catch (error) {
-      console.error('Error saving file:', error);
-      toast.error('Failed to save configuration file');
+      console.error('Error saving config:', error);
+      toast.error('Failed to save configuration');
     }
   };
 
-  // Option to create a new empty configuration
   const createNewConfig = () => {
     setConfigText(`# NGINX Configuration File
 # Created with NGINX ACL Architect
@@ -166,74 +183,92 @@ http {
           </Dialog>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 mb-4">
-            <Input
-              type="text"
-              value={fileName}
-              onChange={(e) => setFileName(e.target.value)}
-              placeholder="No file selected"
-              className="flex-grow"
-              readOnly
-            />
-            <Button 
-              variant="secondary" 
-              className="flex items-center gap-2" 
-              onClick={openFileBrowser}
-            >
-              <FolderOpen className="h-4 w-4" />
-              Browse
-            </Button>
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2" 
-              onClick={createNewConfig}
-            >
-              <Upload className="h-4 w-4" />
-              Create New
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".conf"
-              className="hidden"
-              onChange={handleFileSelect}
-            />
-          </div>
-          
-          <div className="flex items-center gap-2 mb-4">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2"
-              onClick={handleValidateConfig}
-            >
-              <CheckCircle className="h-4 w-4" />
-              Validate Configuration
-            </Button>
+          <div className="space-y-4">
+            <div className="flex flex-col space-y-2">
+              <label className="text-sm font-medium">Available Configurations:</label>
+              <div className="flex flex-wrap gap-2">
+                {availableConfigs.map((path) => (
+                  <Button
+                    key={path}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConfigSelect(path)}
+                  >
+                    {path.split('/').pop()}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 mb-4">
+              <Input
+                type="text"
+                value={fileName}
+                onChange={(e) => setFileName(e.target.value)}
+                placeholder="No file selected"
+                className="flex-grow"
+                readOnly
+              />
+              <Button 
+                variant="secondary" 
+                className="flex items-center gap-2" 
+                onClick={openFileBrowser}
+              >
+                <FolderOpen className="h-4 w-4" />
+                Browse
+              </Button>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2" 
+                onClick={createNewConfig}
+              >
+                <Upload className="h-4 w-4" />
+                Create New
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".conf"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+            </div>
             
-            {hasValidationErrors && (
-              <span className="text-sm text-red-600 dark:text-red-400">
-                Configuration has syntax errors
-              </span>
-            )}
-          </div>
+            <div className="flex items-center gap-2 mb-4">
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={handleValidateConfig}
+              >
+                <CheckCircle className="h-4 w-4" />
+                Validate Configuration
+              </Button>
+              
+              {hasValidationErrors && (
+                <span className="text-sm text-red-600 dark:text-red-400">
+                  Configuration has syntax errors
+                </span>
+              )}
+            </div>
 
-          <Textarea
-            className="font-mono h-96 mb-4"
-            value={configText}
-            onChange={(e) => setConfigText(e.target.value)}
-            placeholder="Load a configuration file or create a new one..."
-          />
+            <Textarea
+              className="font-mono h-96 mb-4"
+              value={configText}
+              onChange={(e) => setConfigText(e.target.value)}
+              placeholder="Load a configuration file or create a new one..."
+            />
 
-          <div className="flex justify-end gap-2">
-            <Button 
-              variant="default"
-              className="flex items-center gap-2"
-              onClick={handleSaveFile}
-              disabled={isUpdating || !configText.trim()}
-            >
-              <Save className="h-4 w-4" />
-              Save File
-            </Button>
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="default"
+                className="flex items-center gap-2"
+                onClick={handleSaveFile}
+                disabled={isUpdating || !configText.trim()}
+              >
+                <Save className="h-4 w-4" />
+                Save File
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
