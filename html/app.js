@@ -7,7 +7,8 @@ const state = {
   },
   config: {
     loaded: false,
-    content: ''
+    content: '',
+    path: '/opt/proxy/nginx.conf' // Default path
   }
 };
 
@@ -387,6 +388,14 @@ function renderSettings() {
       </div>
       <div class="card-content">
         <div class="form-group">
+          <label for="config-path">Configuration File Path</label>
+          <div class="input-group">
+            <input type="text" id="config-path" value="${state.config.path}" placeholder="Path to nginx.conf">
+            <button id="browse-config" class="button button-outline">Browse...</button>
+          </div>
+          <input type="file" id="config-file-input" style="display: none;">
+        </div>
+        <div class="form-group">
           <label for="config-editor">Configuration File</label>
           <textarea id="config-editor" class="config-editor" rows="12" placeholder="Loading configuration..."></textarea>
         </div>
@@ -422,9 +431,32 @@ function renderSettings() {
   // Add event listeners for this page
   document.getElementById('load-config').addEventListener('click', loadConfig);
   document.getElementById('save-config').addEventListener('click', saveConfig);
+  document.getElementById('browse-config').addEventListener('click', () => {
+    document.getElementById('config-file-input').click();
+  });
+  
+  // File input change handler
+  document.getElementById('config-file-input').addEventListener('change', handleFileSelect);
   
   // Load config when settings page is shown
   loadConfig();
+}
+
+// Handle file selection
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const contents = e.target.result;
+    document.getElementById('config-editor').value = contents;
+    document.getElementById('config-path').value = file.name;
+    state.config.path = file.name;
+    state.config.content = contents;
+    showToast(`Loaded file: ${file.name}`, 'success');
+  };
+  reader.readAsText(file);
 }
 
 // Render 404 Page
@@ -443,9 +475,12 @@ function renderNotFound() {
 // Load NGINX configuration
 function loadConfig() {
   const configEditor = document.getElementById('config-editor');
-  configEditor.placeholder = 'Loading configuration...';
+  const configPath = document.getElementById('config-path').value;
   
-  // Use the Express API endpoint instead of PHP
+  configEditor.placeholder = 'Loading configuration...';
+  state.config.path = configPath;
+  
+  // Use the Express API endpoint
   fetch('/api/nginx/config')
     .then(response => {
       if (!response.ok) {
@@ -476,7 +511,7 @@ function saveConfig() {
     return;
   }
   
-  // Use the Express API endpoint instead of PHP
+  // Use the Express API endpoint
   fetch('/api/nginx/config', {
     method: 'POST',
     headers: {

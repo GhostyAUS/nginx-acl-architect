@@ -1,5 +1,5 @@
 
-import { FC, useState, useEffect } from 'react';
+import { FC, useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageTitle from '@/components/common/PageTitle';
@@ -17,6 +17,7 @@ const Settings: FC = () => {
   const [configPath, setConfigPath] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [hasValidationErrors, setHasValidationErrors] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Load the default nginx.conf on component mount
@@ -113,6 +114,10 @@ const Settings: FC = () => {
     }
   };
 
+  const openFileBrowser = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div>
       <PageTitle
@@ -145,6 +150,7 @@ const Settings: FC = () => {
                   <li>Use the Validate button to check your changes before saving.</li>
                   <li>For IP whitelist entries, use CIDR notation (e.g., 192.168.1.1/32).</li>
                   <li>URL patterns can use regular expressions with the "~" prefix.</li>
+                  <li>You can also browse and upload a local configuration file.</li>
                 </ul>
               </div>
             </DialogContent>
@@ -159,11 +165,12 @@ const Settings: FC = () => {
               readOnly
               className="flex-grow"
             />
-            <Button variant="outline" className="flex items-center gap-2" onClick={() => document.getElementById('file-input')?.click()}>
+            <Button variant="outline" className="flex items-center gap-2" onClick={openFileBrowser}>
               <FolderOpen className="h-4 w-4" />
               Browse
             </Button>
             <input
+              ref={fileInputRef}
               id="file-input"
               type="file"
               accept=".conf"
