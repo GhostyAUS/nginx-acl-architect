@@ -6,9 +6,9 @@ services:
       - TZ=Australia/Perth
       - NODE_ENV=production
     container_name: nginx-forward-proxy
-    network_mode: host  # Use host network
+    network_mode: host
     volumes:
-      - /opt/proxy/nginx.conf:/usr/local/nginx/conf/nginx.conf:ro
+      - /opt/proxy/nginx.conf:/usr/local/nginx/conf/nginx.conf:rw
       - /opt/proxy/conf.d:/etc/nginx/conf.d:rw
       - /opt/proxy/ssl:/etc/nginx/ssl:rw
       - /opt/proxy/logs:/var/log/nginx:rw
@@ -28,11 +28,10 @@ services:
       - TZ=Australia/Perth
       - NODE_ENV=production
       - PORT=3000
-    network_mode: host  # Use host network
+    network_mode: host
     volumes:
       - ./:/app:rw
-      # Changed to read-write access for the nginx.conf file
-      - /opt/proxy/nginx.conf:/app/nginx.conf:rw
+      - /opt/proxy/nginx.conf:/opt/proxy/nginx.conf:rw
       - /opt/proxy/logs:/var/log/nginx:ro
     working_dir: /app
     command: >
@@ -46,3 +45,4 @@ services:
 
 volumes:
   nginx-cache:
+
