@@ -10,11 +10,13 @@ import NotFound from './pages/NotFound';
 import AppLayout from './components/layout/AppLayout';
 import { Toaster } from './components/ui/sonner';
 
+type ValidRoute = 'dashboard' | 'ip-acls' | 'url-acls' | 'combined-acls' | 'settings';
+
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>('dashboard');
 
   useEffect(() => {
-    // Handle hash changes
+    // Simple hash change handler
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '') || 'dashboard';
       setCurrentPage(hash);
@@ -31,19 +33,19 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Render the appropriate page based on the hash
-  const renderPage = () => {
+  // Simple route mapping
+  const getPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <AppLayout><Dashboard /></AppLayout>;
+        return <Dashboard />;
       case 'ip-acls':
-        return <AppLayout><IpAcls /></AppLayout>;
+        return <IpAcls />;
       case 'url-acls':
-        return <AppLayout><UrlAcls /></AppLayout>;
+        return <UrlAcls />;
       case 'combined-acls':
-        return <AppLayout><CombinedAcls /></AppLayout>;
+        return <CombinedAcls />;
       case 'settings':
-        return <AppLayout><Settings /></AppLayout>;
+        return <Settings />;
       default:
         return <NotFound />;
     }
@@ -51,10 +53,13 @@ const App: React.FC = () => {
 
   return (
     <div className="app">
-      {renderPage()}
+      <AppLayout>
+        {getPage()}
+      </AppLayout>
       <Toaster />
     </div>
   );
 };
 
 export default App;
+
