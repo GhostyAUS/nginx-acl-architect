@@ -38,7 +38,7 @@ services:
              npm install -g serve &&
              echo 'Building project...' &&
              node build.js &&
-             serve -s dist -l 3000 --listen-host 0.0.0.0"
+             serve -s dist -p 3000"
     restart: always
     depends_on:
       - nginx-proxy
