@@ -27,7 +27,14 @@ app.use(express.static(path.join(__dirname, 'html'), {
 
 // API endpoints for NGINX configuration handling
 app.get('/api/nginx/config', (req, res) => {
-  const configPath = req.query.path || '/opt/proxy/nginx.conf';
+  let configPath = req.query.path || '/opt/proxy/nginx.conf';
+  
+  // Handle the case where the path is [object PointerEvent]
+  if (configPath === '[object PointerEvent]' || typeof configPath !== 'string') {
+    configPath = '/opt/proxy/nginx.conf';
+  }
+  
+  console.log(`Server: Reading config from: ${configPath}`);
   
   try {
     if (fs.existsSync(configPath)) {
@@ -38,6 +45,7 @@ app.get('/api/nginx/config', (req, res) => {
       });
     } else {
       // For development, return a sample config if file doesn't exist
+      console.log(`Server: File not found, returning sample config for: ${configPath}`);
       res.json({
         success: true,
         data: `# Sample NGINX configuration
@@ -66,7 +74,13 @@ http {
 });
 
 app.post('/api/nginx/config', (req, res) => {
-  const configPath = req.query.path || '/opt/proxy/nginx.conf';
+  let configPath = req.query.path || '/opt/proxy/nginx.conf';
+  
+  // Handle the case where the path is [object PointerEvent]
+  if (configPath === '[object PointerEvent]' || typeof configPath !== 'string') {
+    configPath = '/opt/proxy/nginx.conf';
+  }
+  
   const configContent = req.body;
   
   if (!configContent) {
@@ -75,6 +89,8 @@ app.post('/api/nginx/config', (req, res) => {
       message: 'No configuration content provided'
     });
   }
+  
+  console.log(`Server: Writing config to: ${configPath}`);
   
   try {
     // Create backup if file exists

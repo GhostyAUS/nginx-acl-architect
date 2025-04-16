@@ -489,7 +489,15 @@ function renderNotFound() {
 // Load NGINX configuration
 function loadConfig(path) {
   const configEditor = document.getElementById('config-editor');
-  const configPath = path || document.getElementById('config-path').value;
+  
+  // Fix the path parameter if it's a PointerEvent (from button click)
+  let configPath;
+  if (path && typeof path === 'object' && path.type === 'click') {
+    // It's a click event object, use the default path
+    configPath = document.getElementById('config-path').value || '/opt/proxy/nginx.conf';
+  } else {
+    configPath = path || document.getElementById('config-path').value || '/opt/proxy/nginx.conf';
+  }
   
   configEditor.placeholder = 'Loading configuration...';
   state.config.path = configPath;
@@ -504,13 +512,17 @@ function loadConfig(path) {
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-      return response.text();
+      return response.json();
     })
     .then(data => {
-      configEditor.value = data;
-      state.config.loaded = true;
-      state.config.content = data;
-      showToast('Configuration loaded successfully', 'success');
+      if (data.success && data.data) {
+        configEditor.value = data.data;
+        state.config.loaded = true;
+        state.config.content = data.data;
+        showToast('Configuration loaded successfully', 'success');
+      } else {
+        throw new Error(data.message || 'Failed to load configuration');
+      }
     })
     .catch(error => {
       console.error('Error loading config:', error);

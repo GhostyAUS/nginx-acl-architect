@@ -20,7 +20,9 @@ import {
   readConfigFile, 
   writeConfigFile, 
   parseNginxFile, 
-  generateNginxFile 
+  generateNginxFile,
+  loadNginxConfig,
+  saveNginxConfig
 } from '@/services/nginx-service';
 
 const Settings: FC = () => {
@@ -40,8 +42,17 @@ const Settings: FC = () => {
       const content = await readConfigFile(path);
       if (content) {
         setConfigText(content);
-        setFileName(path.split('/').pop() || path);
-        toast.success(`Loaded configuration from ${path}`);
+        setFileName(path);
+        
+        // Parse the config text to update the application state
+        try {
+          const parsedConfig = parseNginxFile(content);
+          await saveNginxConfig(parsedConfig);
+          toast.success(`Loaded and parsed configuration from ${path}`);
+        } catch (parseError) {
+          console.error('Error parsing config:', parseError);
+          toast.error('Configuration loaded but could not be parsed. The file may have an invalid format.');
+        }
       }
     } catch (error) {
       console.error('Error loading config:', error);
@@ -56,11 +67,14 @@ const Settings: FC = () => {
     try {
       const text = await file.text();
       // Attempt to parse the config to validate it
-      parseNginxFile(text);
+      const parsedConfig = parseNginxFile(text);
       
       setConfigText(text);
       setFileName(file.name);
-      toast.success(`Configuration file "${file.name}" uploaded successfully`);
+      
+      // Update the application state with the parsed config
+      await saveNginxConfig(parsedConfig);
+      toast.success(`Configuration file "${file.name}" uploaded and parsed successfully`);
     } catch (error) {
       console.error('Error reading file:', error);
       toast.error('Invalid NGINX configuration file');
@@ -75,9 +89,12 @@ const Settings: FC = () => {
 
     try {
       // Validate the config before saving
-      parseNginxFile(configText);
+      const parsedConfig = parseNginxFile(configText);
+      
+      // Update the application state with the parsed config
+      await saveNginxConfig(parsedConfig);
 
-      if (fileName.startsWith('/opt/proxy/') || fileName.startsWith('/etc/nginx/')) {
+      if (fileName.startsWith('/opt/proxy/') || fileName.startsWith('/etc/nginx/') || fileName.startsWith('/usr/local/nginx/')) {
         await writeConfigFile(fileName, configText);
         toast.success('Configuration saved to Docker volume');
       } else {

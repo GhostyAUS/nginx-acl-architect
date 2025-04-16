@@ -1,13 +1,28 @@
+
 import { NginxConfig } from '@/types/nginx';
 import { parseNginxConfig, generateNginxConfig } from './nginx-parser';
 import { toast } from "sonner";
 import { validateNginxConfig, validateAndFixNginxConfig } from './nginx-validator';
+
+// Global state to track the loaded configuration
+let globalConfig: NginxConfig | null = null;
 
 // Function to parse a file string into NginxConfig object
 export function parseNginxFile(fileContent: string): NginxConfig {
   try {
     const config = parseNginxConfig(fileContent);
     console.log('Successfully parsed nginx configuration', config);
+    
+    // Update global state
+    globalConfig = config;
+    
+    // Also save to localStorage for persistence
+    try {
+      localStorage.setItem('nginxConfig', JSON.stringify(config));
+    } catch (storageError) {
+      console.warn('Failed to save config to localStorage:', storageError);
+    }
+    
     return config;
   } catch (error) {
     console.error('Failed to parse nginx config:', error);
@@ -27,21 +42,41 @@ export function generateNginxFile(config: NginxConfig): string {
   }
 }
 
-// Function to load Nginx config from local storage or file
+// Function to load Nginx config from local storage or global state
 export async function loadNginxConfig(): Promise<NginxConfig> {
   try {
+    // First check if we have a global config
+    if (globalConfig) {
+      return globalConfig;
+    }
+    
+    // Then try localStorage
     const savedConfig = localStorage.getItem('nginxConfig');
     
     if (savedConfig) {
-      return JSON.parse(savedConfig);
+      const parsedConfig = JSON.parse(savedConfig);
+      globalConfig = parsedConfig; // Update global state
+      return parsedConfig;
     }
     
-    // Return a default config that matches NginxConfig type
-    return {
+    // If no config is found, return a default and try to load from server
+    const defaultConfig = {
       ipAclGroups: [],
       urlAclGroups: [],
       combinedAcls: []
     };
+    
+    // Try to load the default config file from server
+    try {
+      const configContent = await readConfigFile('/opt/proxy/nginx.conf');
+      if (configContent) {
+        return parseNginxFile(configContent);
+      }
+    } catch (loadError) {
+      console.warn('Could not load default config from server:', loadError);
+    }
+    
+    return defaultConfig;
   } catch (error) {
     console.error('Failed to load nginx config:', error);
     toast.error('Failed to load nginx configuration');
@@ -55,9 +90,12 @@ export async function loadNginxConfig(): Promise<NginxConfig> {
   }
 }
 
-// Function to save Nginx config to local storage
+// Function to save Nginx config to local storage and update global state
 export async function saveNginxConfig(config: NginxConfig): Promise<void> {
   try {
+    // Update global state
+    globalConfig = config;
+    
     // Save to local storage
     localStorage.setItem('nginxConfig', JSON.stringify(config));
     toast.success('Configuration saved successfully');
@@ -97,6 +135,18 @@ export async function listConfigFiles(): Promise<string[]> {
 export async function readConfigFile(path: string): Promise<string> {
   try {
     console.log(`Reading config from: ${path}`);
+    
+    // Handle null or undefined path
+    if (!path) {
+      path = '/opt/proxy/nginx.conf';
+    }
+    
+    // Ensure the path is a string
+    if (typeof path !== 'string') {
+      console.warn(`Invalid path type: ${typeof path}, using default path`);
+      path = '/opt/proxy/nginx.conf';
+    }
+    
     const response = await fetch(`/api/nginx/config?path=${encodeURIComponent(path)}`);
     
     if (!response.ok) {
@@ -121,6 +171,18 @@ export async function readConfigFile(path: string): Promise<string> {
 export async function writeConfigFile(path: string, content: string): Promise<void> {
   try {
     console.log(`Writing config to: ${path}`);
+    
+    // Handle null or undefined path
+    if (!path) {
+      path = '/opt/proxy/nginx.conf';
+    }
+    
+    // Ensure the path is a string
+    if (typeof path !== 'string') {
+      console.warn(`Invalid path type: ${typeof path}, using default path`);
+      path = '/opt/proxy/nginx.conf';
+    }
+    
     const response = await fetch(`/api/nginx/config?path=${encodeURIComponent(path)}`, {
       method: 'POST',
       headers: {
